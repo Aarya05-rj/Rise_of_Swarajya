@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-saffron: #f4a460;
+  --color-saffron-light: #ff9933;
+  --color-saffron-dark: #b35900;
+  --color-royal-gold: #ffd700;
+  
+  --font-maratha: "Outfit", sans-serif;
+}
+
+:root {
+  font-family: var(--font-maratha);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  background-color: #0a0a0a;
+  color: #f5f5f5;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+}
+
+/* Custom Glow Effects */
+.glow-saffron {
+  box-shadow: 0 0 15px rgba(244, 164, 96, 0.3);
+}
+
+.glow-gold {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+}
+
+.text-glow-saffron {
+  text-shadow: 0 0 10px rgba(244, 164, 96, 0.5);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-saffron-dark);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-saffron);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}

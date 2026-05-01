@@ -1,0 +1,128 @@
+create table if not exists public.quiz_questions (
+  id bigserial primary key,
+  level integer not null check (level between 1 and 10),
+  quiz integer not null check (quiz between 1 and 9),
+  question text not null,
+  options jsonb not null,
+  correct_answer integer not null check (correct_answer between 0 and 3),
+  created_at timestamptz not null default now(),
+  unique (level, quiz, question)
+);
+
+create table if not exists public.quiz_progress (
+  id bigserial primary key,
+  user_id uuid not null,
+  level integer not null check (level between 1 and 10),
+  quiz integer not null check (quiz between 1 and 9),
+  score integer not null check (score between 0 and 10),
+  stars integer not null check (stars between 0 and 3),
+  completed boolean not null default false,
+  updated_at timestamptz not null default now(),
+  unique (user_id, level, quiz)
+);
+
+insert into public.quiz_questions (level, quiz, question, options, correct_answer)
+select level, quiz, question, options::jsonb, correct_answer
+from jsonb_to_recordset('[
+  {"level":1,"quiz":1,"question":"Where was Chhatrapati Shivaji Maharaj born?","options":["Shivneri Fort","Raigad Fort","Sinhagad Fort","Pratapgad Fort"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"Who was the mother of Shivaji Maharaj?","options":["Tarabai","Jijabai","Soyarabai","Ahilyabai"],"correct_answer":1},
+  {"level":1,"quiz":1,"question":"Who was the father of Shivaji Maharaj?","options":["Shahaji Bhosale","Sambhaji Maharaj","Baji Rao","Dadoji Konddev"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"In which year was Shivaji Maharaj born?","options":["1600","1627","1630","1674"],"correct_answer":2},
+  {"level":1,"quiz":1,"question":"Which ideal did Shivaji Maharaj work to establish?","options":["Swarajya","Company Raj","Delhi Sultanate","Portuguese rule"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"Which region shaped Shivaji Maharaj's early life?","options":["Maval","Malwa","Awadh","Bengal"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"Who guided young Shivaji with stories of dharma and courage?","options":["Jijabai","Aurangzeb","Afzal Khan","Shaista Khan"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"What was the childhood name often associated with Shivaji Maharaj?","options":["Shivba","Raje Singh","Bala Rao","Sena Nayak"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"Which dynasty did Shivaji Maharaj belong to?","options":["Bhosale","Holkar","Scindia","Gaekwad"],"correct_answer":0},
+  {"level":1,"quiz":1,"question":"Which quality best describes Shivaji Maharaj's early leadership?","options":["Visionary courage","Naval surrender","Courtly silence","Foreign dependence"],"correct_answer":0},
+
+  {"level":1,"quiz":2,"question":"At which temple was the oath of Swarajya traditionally taken?","options":["Raireshwar","Tuljapur","Jejuri","Trimbakeshwar"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"What did the oath of Swarajya represent?","options":["Self-rule","Trade monopoly","Mughal alliance","European treaty"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"Who joined Shivaji Maharaj in the early Swarajya mission?","options":["Mavalas","Portuguese sailors","British officers","Persian nobles"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"What was the core aim of Swarajya?","options":["People-centered rule","Foreign taxation","Imperial luxury","Sea piracy"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"Which terrain helped early Maratha resistance?","options":["Sahyadri hills","Thar desert","Ganga plains","Sundarban delta"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"What made the early oath powerful?","options":["Shared purpose","Royal jewels","Foreign weapons","Imperial permission"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"The word Swarajya most closely means what?","options":["Self-rule","Tax farming","Palace guard","Naval dock"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"Which value was central to the Swarajya movement?","options":["Justice","Surrender","Luxury","Isolation"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"Which group became the backbone of early campaigns?","options":["Local warriors","Dutch merchants","Mughal courtiers","Roman envoys"],"correct_answer":0},
+  {"level":1,"quiz":2,"question":"What did Shivaji Maharaj build from a young age?","options":["A disciplined local force","A European factory","A desert empire","A foreign navy only"],"correct_answer":0},
+
+  {"level":1,"quiz":3,"question":"Which fort was first captured by Shivaji Maharaj in 1646?","options":["Torna","Raigad","Panhala","Vijaydurg"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"What was Torna Fort also associated with?","options":["Prachandagad","Janjira","Sindhudurg","Daulatabad"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Why were forts vital to Swarajya?","options":["Defense and control","Only decoration","Foreign trade only","Religious disputes"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Which fort later became the capital of Swarajya?","options":["Raigad","Shivneri","Janjira","Agra"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"What did capturing forts demonstrate?","options":["Strategic planning","Naval retreat","Court poetry","Foreign loyalty"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Which fort is linked with Shivaji Maharaj's birth?","options":["Shivneri","Torna","Rajgad","Sinhagad"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Which hill range contains many Maratha forts?","options":["Sahyadri","Himalaya","Aravalli","Vindhya only"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"What was Rajgad known for before Raigad became capital?","options":["A key early capital","A British base","A sea fort","A Mughal palace"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Forts helped Marathas practice which strategy?","options":["Mobile defense","Open surrender","River blockade only","Desert warfare only"],"correct_answer":0},
+  {"level":1,"quiz":3,"question":"Which word best fits Maratha fort strategy?","options":["Resilience","Extravagance","Dependency","Confusion"],"correct_answer":0},
+
+  {"level":1,"quiz":4,"question":"Who was defeated at Pratapgad in 1659?","options":["Afzal Khan","Shaista Khan","Aurangzeb","Jai Singh"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"The Pratapgad meeting is remembered for what?","options":["Courage and strategy","A naval treaty","A coronation","A tax reform"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"Which weapon is famously linked with the Afzal Khan encounter?","options":["Wagh Nakh","Cannon ship","Longbow","Flintlock only"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"What did the victory at Pratapgad boost?","options":["Maratha confidence","Mughal control","Portuguese power","British rule"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"Which fort stands near the Afzal Khan episode?","options":["Pratapgad","Sindhudurg","Shivneri","Lohagad"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"Afzal Khan was a general from which power?","options":["Adilshahi Sultanate","British East India Company","Portuguese Estado","French Company"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"What was Shivaji Maharaj's strength in this episode?","options":["Preparedness","Carelessness","Isolation","Naval escape"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"What followed the Pratapgad victory?","options":["Wider recognition","Immediate surrender","End of Swarajya","Loss of all forts"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"Which trait did the Pratapgad event reveal?","options":["Tactical intelligence","Foreign dependence","Fear of terrain","Court luxury"],"correct_answer":0},
+  {"level":1,"quiz":4,"question":"The Pratapgad event belongs to which phase?","options":["Rise of Swarajya","Peshwa era","British Raj","Post-independence"],"correct_answer":0},
+
+  {"level":1,"quiz":5,"question":"Who was raided by Shivaji Maharaj in Pune in 1663?","options":["Shaista Khan","Afzal Khan","Jai Singh","Dara Shikoh"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"Where did the raid on Shaista Khan take place?","options":["Lal Mahal","Red Fort","Agra Fort","Sinhagad"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"What made the Pune raid famous?","options":["Surprise and speed","Open battlefield only","Sea battle","Formal debate"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"Shaista Khan served which empire?","options":["Mughal Empire","Maratha Empire","Portuguese Empire","Dutch Company"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"Which city was central to the Shaista Khan raid?","options":["Pune","Surat","Delhi","Goa"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"What was the impact of the raid?","options":["Mughal morale was shaken","Swarajya ended","Forts were abandoned","Navy dissolved"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"The raid showed mastery of what?","options":["Guerrilla tactics","Desert caravans","European artillery only","Court ceremony"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"In which decade did the Pune raid occur?","options":["1660s","1600s","1700s","1750s"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"Which phrase fits the raid best?","options":["Bold night strike","Palace coronation","Sea blockade","Peace festival"],"correct_answer":0},
+  {"level":1,"quiz":5,"question":"What did Shivaji Maharaj avoid relying on?","options":["Slow conventional warfare","Local intelligence","Surprise","Terrain knowledge"],"correct_answer":0},
+
+  {"level":1,"quiz":6,"question":"Which wealthy port city was raided in 1664?","options":["Surat","Goa","Calicut","Diu"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Why was Surat important?","options":["Wealthy trade center","Remote hill fort","Birthplace of Shivaji","Capital of Swarajya"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Which empire controlled Surat's wealth at the time?","options":["Mughal Empire","Roman Empire","Maratha Confederacy","British Crown"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"What did raids help fund?","options":["Swarajya campaigns","Foreign surrender","Court exile","Desert forts"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Surat was located in which present-day state?","options":["Gujarat","Maharashtra","Karnataka","Rajasthan"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"The Surat raid showed attention to what?","options":["Economic strategy","Random travel","Only ritual","No planning"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Which year is linked with the first Surat raid?","options":["1664","1646","1674","1680"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"What did Shivaji Maharaj avoid harming as policy?","options":["Common people when possible","All trade routes","Every temple","Local food stocks only"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Surat was known mainly for what?","options":["Commerce","High mountains","Coronation hall","Horse breeding only"],"correct_answer":0},
+  {"level":1,"quiz":6,"question":"Which skill helped such operations succeed?","options":["Fast movement","Long delay","No scouts","Open warning"],"correct_answer":0},
+
+  {"level":1,"quiz":7,"question":"From which city did Shivaji Maharaj escape in 1666?","options":["Agra","Delhi","Lahore","Ajmer"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"Who was the Mughal emperor during the Agra episode?","options":["Aurangzeb","Akbar","Humayun","Bahadur Shah Zafar"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"The Agra escape is remembered as what kind of event?","options":["A daring escape","A naval battle","A coronation","A fort capture"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"Who accompanied Shivaji Maharaj to Agra?","options":["Sambhaji Maharaj","Baji Prabhu","Tanaji Malusare","Kanhoji Angre"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"What did the escape restore?","options":["Freedom to lead Swarajya","Mughal imprisonment","Foreign rule","Portuguese control"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"The Agra visit followed which broader conflict?","options":["Mughal-Maratha tensions","British-Maratha treaty","Portuguese conquest","Dutch trade war"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"Which quality was central to the escape?","options":["Ingenuity","Carelessness","Surrender","Luxury"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"Agra is associated with which imperial court?","options":["Mughal","Roman","Dutch","French"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"The escape strengthened which image of Shivaji Maharaj?","options":["Resourceful leader","Defeated prisoner","Foreign governor","Silent poet only"],"correct_answer":0},
+  {"level":1,"quiz":7,"question":"Which word best describes the Agra episode?","options":["Legendary","Ordinary","Unplanned","Naval"],"correct_answer":0},
+
+  {"level":1,"quiz":8,"question":"In which year was Shivaji Maharaj crowned Chhatrapati?","options":["1674","1664","1646","1680"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"Where did the coronation take place?","options":["Raigad","Shivneri","Surat","Agra"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"What title was formally assumed at coronation?","options":["Chhatrapati","Subedar","Viceroy","Governor"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"The coronation symbolized what?","options":["Sovereign Hindu kingdom","Foreign company rule","Mughal surrender","Portuguese alliance"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"Which fort became a royal capital?","options":["Raigad","Janjira","Agra","Daulatabad"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"What did the coronation give Swarajya?","options":["Legitimacy","Defeat","Exile","Naval ban"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"Which month is linked with the 1674 coronation?","options":["June","January","October","March"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"Who became Chhatrapati at Raigad?","options":["Shivaji Maharaj","Shahaji Bhosale","Afzal Khan","Shaista Khan"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"What administrative vision followed coronation?","options":["Organized statecraft","No governance","Foreign dependency","Only trade"],"correct_answer":0},
+  {"level":1,"quiz":8,"question":"Which word best matches the coronation?","options":["Sovereignty","Captivity","Retreat","Silence"],"correct_answer":0},
+
+  {"level":1,"quiz":9,"question":"What was Shivaji Maharaj's council of eight ministers called?","options":["Ashtapradhan Mandal","Navratna Sabha","Rajya Sabha","Panchayat only"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which minister was responsible for finance?","options":["Amatya","Senapati","Nyayadhish","Panditrao"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which minister led military matters?","options":["Senapati","Peshwa","Sumant","Sachiv"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which post was the chief ministerial role?","options":["Peshwa","Sarnobat","Havaldar","Killedar"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"What did Ashtapradhan show about Swarajya?","options":["Organized administration","No structure","Foreign control","Only warfare"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which office handled justice?","options":["Nyayadhish","Amatya","Senapati","Mantri"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which value did the administration emphasize?","options":["Accountability","Chaos","Luxury","Neglect"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"What was Swarajya beyond battles?","options":["A functioning state","A trade rumor","A single fort","A foreign post"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"Which legacy did Shivaji Maharaj leave?","options":["Courage and good governance","Only palace wealth","Colonial rule","Naval defeat"],"correct_answer":0},
+  {"level":1,"quiz":9,"question":"At which fort did Shivaji Maharaj pass away in 1680?","options":["Raigad","Shivneri","Pratapgad","Sinhagad"],"correct_answer":0}
+]'::jsonb) as seed(level integer, quiz integer, question text, options jsonb, correct_answer integer)
+on conflict (level, quiz, question) do nothing;
+
+notify pgrst, 'reload schema';
