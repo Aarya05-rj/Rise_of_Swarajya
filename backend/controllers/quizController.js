@@ -157,7 +157,7 @@ exports.submitQuiz = async (req, res) => {
       activity_name: `Quiz Level ${level} - Quiz ${quiz} Completed`,
       activity_type: 'quiz_completed',
       details: { level, quiz, score, stars },
-      timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
     });
 
     res.json({ success: true, data });

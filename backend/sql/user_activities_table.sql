@@ -4,5 +4,5 @@ create table if not exists public.user_activities (
   activity_name text not null,
   activity_type text,
   details jsonb,
-  timestamp timestamptz not null default now()
+  created_at timestamptz not null default now()
 );

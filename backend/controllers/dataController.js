@@ -120,7 +120,7 @@ exports.getActivities = async (req, res) => {
       .from('user_activities')
       .select('*')
       .eq('user_id', id)
-      .order('timestamp', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(5);
     
     // Graceful handling if table is missing or other errors
@@ -148,7 +148,7 @@ exports.logActivity = async (req, res) => {
       activity_name: name,
       activity_type,
       details: details || {},
-      timestamp: timestamp || new Date().toISOString()
+      created_at: timestamp || new Date().toISOString()
     });
     
     if (error) {
