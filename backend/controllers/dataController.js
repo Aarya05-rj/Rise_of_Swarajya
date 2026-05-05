@@ -123,27 +123,42 @@ exports.getActivities = async (req, res) => {
       .order('timestamp', { ascending: false })
       .limit(5);
     
-    if (error) throw error;
-    res.json({ success: true, data });
+    // Graceful handling if table is missing or other errors
+    if (error) {
+      console.warn('[GetActivities Warning]', error.message);
+      return res.json({ success: true, data: [] });
+    }
+    
+    res.json({ success: true, data: data || [] });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('[GetActivities Error]', error.message);
+    res.json({ success: true, data: [] }); // Fallback to empty list
   }
 };
 
 exports.logActivity = async (req, res) => {
   try {
-    const { user_id, activity_type, details, timestamp } = req.body;
+    const { user_id, activity_type, activity_name, details, timestamp } = req.body;
+    
+    // Ensure activity_name is provided as it is NOT NULL in schema
+    const name = activity_name || activity_type || 'General Activity';
     
     const { error } = await supabase.from('user_activities').insert({
       user_id,
+      activity_name: name,
       activity_type,
       details: details || {},
       timestamp: timestamp || new Date().toISOString()
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error('[LogActivity Error]', error.message);
+      return res.status(400).json({ success: false, error: error.message });
+    }
+    
     res.json({ success: true, message: "Activity logged successfully" });
   } catch (error) {
+    console.error('[LogActivity Critical Error]', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 };

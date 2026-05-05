@@ -154,6 +154,7 @@ exports.submitQuiz = async (req, res) => {
 
     await supabase.from('user_activities').insert({
       user_id: userId,
+      activity_name: `Quiz Level ${level} - Quiz ${quiz} Completed`,
       activity_type: 'quiz_completed',
       details: { level, quiz, score, stars },
       timestamp: new Date().toISOString(),
