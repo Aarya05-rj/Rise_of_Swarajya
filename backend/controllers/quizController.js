@@ -20,13 +20,23 @@ const getSeedQuestions = () => {
   return cachedSeedQuestions;
 };
 
-const getFallbackQuestions = (level, quiz) =>
-  getSeedQuestions()
-    .filter((question) => question.level === level && question.quiz === quiz)
-    .map((question, index) => ({
-      id: level * 1000 + quiz * 100 + index + 1,
-      ...question,
-    }));
+const getFallbackQuestions = (level, quiz) => {
+  const seedQuestions = getSeedQuestions();
+  const exactQuestions = seedQuestions.filter((question) => question.level === level && question.quiz === quiz);
+  const reusableQuestions = exactQuestions.length
+    ? exactQuestions
+    : seedQuestions.filter((question) => question.level === 1 && question.quiz === quiz);
+  const questions = reusableQuestions.length
+    ? reusableQuestions
+    : seedQuestions.filter((question) => question.level === 1 && question.quiz === 1);
+
+  return questions.map((question, index) => ({
+    ...question,
+    id: level * 1000 + quiz * 100 + index + 1,
+    level,
+    quiz,
+  }));
+};
 
 const getStars = (score) => {
   if (score >= 9) return 3;

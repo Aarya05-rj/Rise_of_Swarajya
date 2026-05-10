@@ -39,9 +39,7 @@ export const QuizPath = ({ level, progress, onBack, onStartQuiz }: QuizPathProps
   const progressPercent = Math.round((completedCount / quizCount) * 100);
 
   const isUnlocked = (quiz: number) => {
-    if (level.level > 1) return false;
-    if (quiz === 1) return true;
-    return progress.some((item) => item.level === level.level && item.quiz === quiz - 1 && item.completed);
+    return quiz === 1 || progress.some((item) => item.level === level.level && item.quiz === quiz - 1 && item.completed);
   };
 
   return (

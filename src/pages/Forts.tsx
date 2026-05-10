@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { Search, MapPin, Shield, Camera, X, Loader2, Map as MapIcon } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 interface Fort {
@@ -33,8 +32,8 @@ export const Forts: React.FC = () => {
       const response = await fetch('http://localhost:5000/api/forts');
       if (!response.ok) throw new Error('Failed to fetch forts');
       
-      const data = await response.json();
-      setForts(data || []);
+      const payload = await response.json();
+      setForts(payload.data || payload || []);
     } catch (err) {
       console.error('Error fetching forts:', err);
     } finally {

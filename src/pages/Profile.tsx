@@ -31,7 +31,8 @@ export const Profile: React.FC = () => {
       const response = await fetch(`http://localhost:5000/api/profile/${user?.id}`);
       if (!response.ok) throw new Error('Failed to fetch profile');
       
-      const data = await response.json();
+      const payload = await response.json();
+      const data = payload.data || payload;
       
       // Smart mapping for flexible column names
       const mappedData = {

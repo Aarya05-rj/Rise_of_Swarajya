@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { HelpCircle, Clock, Trophy, ArrowRight, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 interface Question {

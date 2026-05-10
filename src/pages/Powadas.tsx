@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { Music, Play, Pause, SkipForward, SkipBack, Volume2, ListMusic, Loader2 } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 interface Powada {
@@ -31,8 +30,8 @@ export const Powadas: React.FC = () => {
       const response = await fetch('http://localhost:5000/api/powadas');
       if (!response.ok) throw new Error('Failed to fetch powadas');
       
-      const data = await response.json();
-      setPlaylist(data || []);
+      const payload = await response.json();
+      setPlaylist(payload.data || payload || []);
     } catch (err) {
       console.error('Error fetching powadas:', err);
     } finally {

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { User, Shield, Star, X, Info, Loader2 } from 'lucide-react';
-import { supabase } from '../services/supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 interface Character {
@@ -31,8 +30,8 @@ export const Characters: React.FC = () => {
       const response = await fetch('http://localhost:5000/api/characters');
       if (!response.ok) throw new Error('Failed to fetch characters');
       
-      const data = await response.json();
-      setCharacters(data || []);
+      const payload = await response.json();
+      setCharacters(payload.data || payload || []);
     } catch (err) {
       console.error('Error fetching characters:', err);
     } finally {

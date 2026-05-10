@@ -12,6 +12,7 @@ router.post('/update-score', dataController.updateScore);
 
 // Activity tracking routes
 router.get('/activities/:id', dataController.getActivities);
+router.post('/activities', dataController.logActivity);
 router.post('/log-activity', dataController.logActivity);
 
 // Duolingo-style quiz routes

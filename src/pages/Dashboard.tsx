@@ -3,10 +3,6 @@ import { motion } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { 
-  Trophy, 
-  Target, 
-  Clock, 
-  ArrowUpRight, 
   History, 
   Map as MapIcon, 
   Users, 
@@ -16,7 +12,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../services/supabaseClient';
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -35,7 +30,8 @@ export const Dashboard: React.FC = () => {
       // 1. Fetch Profile
       const profRes = await fetch(`http://localhost:5000/api/profile/${user?.id}`);
       if (profRes.ok) {
-        const profile = await profRes.json();
+        const payload = await profRes.json();
+        const profile = payload.data || payload;
         if (profile) {
           const realScore = profile.total_score || profile.score || profile.points || profile.xp || 0;
           const realProgress = profile.progress || profile.completion || profile.percentage || 0;
@@ -53,7 +49,8 @@ export const Dashboard: React.FC = () => {
       // 2. Fetch recent activities
       const actRes = await fetch(`http://localhost:5000/api/activities/${user?.id}`);
       if (actRes.ok) {
-        const acts = await actRes.json();
+        const payload = await actRes.json();
+        const acts = payload.data || payload;
         setActivities(acts || []);
       }
     } catch (err) {
