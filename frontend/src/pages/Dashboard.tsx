@@ -14,8 +14,26 @@ import {
 import { Link } from 'react-router-dom';
 import { getQuizProgress } from '../services/api';
 
+const normalizeActivities = (payload: any): any[] => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.activities)) return payload.activities;
+  return [];
+};
+
+const readJson = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+};
+
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,18 +46,21 @@ export const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
       // 1. Fetch Profile
-      const profRes = await fetch(`/api/profile/${user?.id}`);
-      const progressRes = await getQuizProgress(user?.id || '');
-      const quizProgress = progressRes.data || [];
+      const [profRes, progressResult] = await Promise.allSettled([
+        fetch(`/api/profile/${user?.id}`, { headers }),
+        getQuizProgress(user?.id || ''),
+      ]);
+      const quizProgress = progressResult.status === 'fulfilled' ? progressResult.value.data || [] : [];
       const completedQuizzes = quizProgress.filter((item: any) => item.completed).length;
       const realQuizProgress = Math.round((completedQuizzes / 90) * 100);
       const realQuizScore = quizProgress
         .filter((item: any) => item.completed)
         .reduce((total: number, item: any) => total + item.score * 10 + item.stars * 25, 0);
 
-      if (profRes.ok) {
-        const profile = await profRes.json();
+      if (profRes.status === 'fulfilled' && profRes.value.ok) {
+        const profile = await readJson(profRes.value);
         if (profile) {
           const profileData = profile.data || profile;
           const realScore = realQuizScore || profileData.total_score || profileData.score || profileData.points || profileData.xp || 0;
@@ -56,13 +77,15 @@ export const Dashboard: React.FC = () => {
       }
 
       // 2. Fetch recent activities
-      const actRes = await fetch(`/api/activities/${user?.id}`);
+      const actRes = await fetch(`/api/activities/${user?.id}`, { headers });
       if (actRes.ok) {
-        const acts = await actRes.json();
-        setActivities(acts || []);
+        const acts = await readJson(actRes);
+        setActivities(normalizeActivities(acts));
+      } else {
+        setActivities([]);
       }
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+    } catch {
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -167,7 +190,9 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">{act.activity_name || 'Expedition Completed'}</p>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                            {act.created_at ? new Date(act.created_at).toLocaleDateString() : 'Recently'}
+                          </p>
                         </div>
                       </div>
                     ))

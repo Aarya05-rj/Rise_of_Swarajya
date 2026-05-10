@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { Search, MapPin, Shield, Camera, X, Loader2, Map as MapIcon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 
 interface Fort {
   id: string;
@@ -17,11 +18,31 @@ interface Fort {
 }
 
 export const Forts: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [forts, setForts] = useState<Fort[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedFort, setSelectedFort] = useState<Fort | null>(null);
+
+  const normalizeFortName = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/\bfort\b/g, '')
+      .replace(/\btemple\b/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
+  const findMatchingFort = (data: Fort[], query: string) => {
+    const firstPlace = query.split(',')[0].split(' to ')[0].trim();
+    const needle = normalizeFortName(firstPlace);
+
+    return data.find((fort) => {
+      const name = normalizeFortName(fort.name);
+      const location = normalizeFortName(fort.location || '');
+      return name === needle || name.includes(needle) || needle.includes(name) || location.includes(needle);
+    });
+  };
 
   useEffect(() => {
     fetchForts();
@@ -36,7 +57,21 @@ export const Forts: React.FC = () => {
 
     console.log("FORT API:", result);
 
-    setForts(Array.isArray(result.data) ? result.data : []);
+    const data = Array.isArray(result.data) ? result.data : [];
+    setForts(data);
+
+    const fortQuery = searchParams.get('fort');
+    if (fortQuery) {
+      const match = findMatchingFort(data, fortQuery);
+      if (match) {
+        setSelectedFort(match);
+        setSearch('');
+      } else {
+        setSearch(fortQuery.split(',')[0].split(' to ')[0].trim());
+      }
+      searchParams.delete('fort');
+      setSearchParams(searchParams, { replace: true });
+    }
 
   } catch (err) {
     console.error('Error fetching forts:', err);
@@ -58,7 +93,10 @@ export const Forts: React.FC = () => {
       try {
         await fetch('/api/activities', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             user_id: user.id,
             activity_name: `Scouted Fort: ${fort.name}`,

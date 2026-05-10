@@ -44,7 +44,7 @@ export const Quiz: React.FC = () => {
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [progress, setProgress] = useState<QuizProgress[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<{ questionId: number; selectedAnswer: number | null }[]>([]);
+  const [answers, setAnswers] = useState<{ questionId: number; selectedAnswer: number | null; selectedAnswerText?: string | null }[]>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -116,7 +116,7 @@ export const Quiz: React.FC = () => {
     setIsAnswered(true);
     setAnswers((current) => [
       ...current.filter((item) => item.questionId !== question.id),
-      { questionId: question.id, selectedAnswer: answer },
+      { questionId: question.id, selectedAnswer: answer, selectedAnswerText: question.options[answer] },
     ]);
   };
 
@@ -135,11 +135,12 @@ export const Quiz: React.FC = () => {
       setError('');
       setScreen('result');
     } catch (err: any) {
-      const score = questions.reduce((total, question) => {
+      const correctAnswers = questions.reduce((total, question) => {
         const answer = answers.find((item) => item.questionId === question.id);
         return total + (answer?.selectedAnswer === question.correctAnswer ? 1 : 0);
       }, 0);
-      const stars = score >= 9 ? 3 : score >= 7 ? 2 : score >= 5 ? 1 : 0;
+      const score = correctAnswers * 10;
+      const stars = score >= 90 ? 3 : score >= 70 ? 2 : score >= 50 ? 1 : 0;
       setResult({ score, stars });
       setError(err.message || 'Progress could not be saved. Your result is shown locally.');
       setScreen('result');
@@ -249,9 +250,10 @@ export const Quiz: React.FC = () => {
             >
               <QuizResult
                 score={result.score}
-                total={questions.length}
+                total={100}
                 stars={result.stars}
                 canGoNext={result.stars > 0 && selectedQuiz < quizCount}
+                onBack={() => setScreen('quiz-path')}
                 onRetry={retryQuiz}
                 onNextQuiz={goNextQuiz}
               />

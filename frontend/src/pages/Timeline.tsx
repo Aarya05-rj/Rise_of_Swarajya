@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { X, Calendar, Info, MapPin } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface TimelineEvent {
   year: string;
@@ -13,7 +14,12 @@ interface TimelineEvent {
 }
 
 export const Timeline: React.FC = () => {
+  const navigate = useNavigate();
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+
+  const openFort = (event: TimelineEvent) => {
+    navigate(`/forts?fort=${encodeURIComponent(event.location)}`);
+  };
 
   const events: TimelineEvent[] = [
     { 
@@ -148,9 +154,17 @@ export const Timeline: React.FC = () => {
               <div className="bg-[#111] border border-white/5 p-6 rounded-3xl hover:border-saffron/30 transition-all cursor-pointer group max-w-2xl" onClick={() => setSelectedEvent(event)}>
                 <div className="flex justify-between items-start mb-4">
                   <span className="px-3 py-1 bg-saffron/10 text-saffron text-xs font-bold rounded-full uppercase tracking-widest">{event.year}</span>
-                  <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest flex items-center">
+                  <button
+                    type="button"
+                    className="text-[10px] text-gray-600 font-bold uppercase tracking-widest flex items-center transition-colors hover:text-saffron"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFort(event);
+                    }}
+                    title={`Open ${event.location} in Forts`}
+                  >
                     <MapPin className="w-3 h-3 mr-1" /> {event.location}
-                  </span>
+                  </button>
                 </div>
                 <h3 className="text-xl font-bold mb-2 group-hover:text-saffron transition-colors">{event.title}</h3>
                 <p className="text-gray-400 font-light text-sm line-clamp-2">{event.desc}</p>
@@ -195,8 +209,15 @@ export const Timeline: React.FC = () => {
                     <Calendar className="w-4 h-4 mr-2 text-saffron" />
                     Year {selectedEvent.year}
                     <span className="mx-3">•</span>
-                    <MapPin className="w-4 h-4 mr-2 text-saffron" />
-                    {selectedEvent.location}
+                    <button
+                      type="button"
+                      onClick={() => openFort(selectedEvent)}
+                      className="inline-flex items-center transition-colors hover:text-saffron"
+                      title={`Open ${selectedEvent.location} in Forts`}
+                    >
+                      <MapPin className="w-4 h-4 mr-2 text-saffron" />
+                      {selectedEvent.location}
+                    </button>
                   </div>
                   <p className="text-gray-300 font-light leading-relaxed text-lg">
                     {selectedEvent.longDesc}

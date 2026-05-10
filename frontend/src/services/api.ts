@@ -1,16 +1,44 @@
+import { supabase } from "./supabaseClient";
+
 const BASE_URL = "/api";
+
+function getTokenExpiry(token: string) {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] || ""));
+    return typeof payload.exp === "number" ? payload.exp : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function getFreshAccessToken() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  let token = sessionData.session?.access_token;
+
+  if (token && getTokenExpiry(token) <= Math.floor(Date.now() / 1000) + 60) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    token = error ? undefined : refreshed.session?.access_token;
+  }
+
+  return token && getTokenExpiry(token) > Math.floor(Date.now() / 1000) ? token : undefined;
+}
 
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   try {
+    const token = await getFreshAccessToken();
+    const headers = new Headers(options.headers);
+    headers.set("Content-Type", "application/json");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
     const response = await fetch(`${BASE_URL}${endpoint}`, {
-      headers: { "Content-Type": "application/json" },
       ...options,
+      headers,
     });
-    const data = await response.json();
+    const text = await response.text();
+    const data = text ? JSON.parse(text) : {};
     if (!response.ok) throw new Error(data.error || "API Error");
     return data;
   } catch (err: any) {
-    console.error(`[API Error] ${endpoint}:`, err.message);
     throw err;
   }
 }
@@ -24,6 +52,7 @@ export const getActivities = (id: string) => apiRequest(`/activities/${id}`);
 export const getQuizQuestions = (level: number, quiz: number) =>
   apiRequest(`/questions?level=${level}&quiz=${quiz}`);
 export const getQuizProgress = (userId: string) => apiRequest(`/progress/${userId}`);
+export const getUserStats = (userId: string) => apiRequest(`/user-stats/${userId}`);
 
 // Mutations
 export const updateProfile = (id: string, full_name: string) =>
@@ -57,7 +86,7 @@ export const submitQuiz = (payload: {
   userId: string;
   level: number;
   quiz: number;
-  answers: { questionId: number; selectedAnswer: number | null }[];
+  answers: { questionId: number; selectedAnswer: number | null; selectedAnswerText?: string | null }[];
 }) =>
   apiRequest("/submit-quiz", {
     method: "POST",

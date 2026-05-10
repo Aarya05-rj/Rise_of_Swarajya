@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Shield, Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
+import logo from '../assets/logo.png';
 
 export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -71,8 +72,8 @@ export const Register: React.FC = () => {
 
           <div className="text-center mb-10">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-saffron/10 rounded-2xl text-saffron">
-                <Shield className="w-10 h-10" />
+              <div className="p-3 bg-saffron/10 rounded-2xl">
+                <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-2">Join the Swarajya</h1>

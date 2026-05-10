@@ -16,7 +16,7 @@ interface Character {
 }
 
 export const Characters: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,10 @@ export const Characters: React.FC = () => {
       try {
         await fetch('/api/log-activity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             user_id: user.id,
             activity_type: 'character',

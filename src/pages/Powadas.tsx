@@ -14,7 +14,7 @@ interface Powada {
 }
 
 export const Powadas: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [playlist, setPlaylist] = useState<Powada[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTrack, setCurrentTrack] = useState<Powada | null>(null);
@@ -27,7 +27,7 @@ export const Powadas: React.FC = () => {
 
   const fetchPowadas = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/powadas');
+      const response = await fetch('/api/powadas');
       if (!response.ok) throw new Error('Failed to fetch powadas');
       
       const payload = await response.json();
@@ -59,9 +59,12 @@ export const Powadas: React.FC = () => {
       // Tracking: Only log when starting a NEW track
       if (user) {
         try {
-          await fetch('http://localhost:5000/api/activities', {
+          await fetch('/api/activities', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
             body: JSON.stringify({
               user_id: user.id,
               activity_name: `Listened to Ballad: ${track.title}`,

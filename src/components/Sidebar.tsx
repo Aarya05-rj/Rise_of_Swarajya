@@ -9,11 +9,12 @@ import {
   Music, 
   User, 
   LogOut, 
-  Shield,
   Menu,
   X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+import logo from '../assets/logo.png';
 
 export const Sidebar: React.FC = () => {
   const { signOut, user } = useAuth();
@@ -56,7 +57,7 @@ export const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <aside className={`fixed left-0 top-0 h-screen w-64 bg-[#0d0d0d] border-r border-white/5 flex flex-col z-40 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-6 flex items-center space-x-3">
-          <Shield className="w-8 h-8 text-saffron fill-saffron/20" />
+          <img src={logo} alt="Logo" className="w-10 h-10 object-contain" />
           <span className="text-xl font-black tracking-tighter text-white">SWARAJYA</span>
         </div>
 
@@ -82,9 +83,17 @@ export const Sidebar: React.FC = () => {
 
         <div className="p-4 border-t border-white/5">
           <div className="bg-[#151515] p-4 rounded-2xl mb-4 flex items-center space-x-3">
-            <div className="w-10 h-10 bg-saffron/20 rounded-full flex items-center justify-center text-saffron font-bold">
-              {user?.email?.charAt(0).toUpperCase()}
-            </div>
+            {user?.user_metadata?.avatar_url ? (
+              <img 
+                src={user.user_metadata.avatar_url} 
+                alt="Avatar" 
+                className="w-10 h-10 rounded-full object-cover border border-white/10"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-saffron/20 rounded-full flex items-center justify-center text-saffron font-bold">
+                {user?.email?.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{user?.user_metadata?.full_name || 'Warrior'}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>

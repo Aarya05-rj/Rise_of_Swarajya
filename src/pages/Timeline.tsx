@@ -1,126 +1,39 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
-import { X, Calendar, Info, MapPin } from 'lucide-react';
+import { X, Info, MapPin, Camera, ChevronRight, BookOpen, Quote } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 
-interface TimelineEvent {
-  year: string;
-  title: string;
-  desc: string;
-  longDesc: string;
-  location: string;
-  category: 'Birth' | 'Battle' | 'Coronation' | 'Expansion';
-}
+import { timelineEvents, type TimelineEvent } from '../data/timelineData';
 
 export const Timeline: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(null);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const autoOpenDone = useRef(false);
 
-  const events: TimelineEvent[] = [
-    { 
-      year: '1630', 
-      title: 'Birth of a Legend', 
-      desc: 'Chhatrapati Shivaji Maharaj was born at Shivneri Fort.',
-      longDesc: 'Born to Jijabai and Shahaji Bhonsle, his birth marked the beginning of a new era. His mother Jijabai instilled in him the values of justice, bravery, and the vision of a free kingdom.',
-      location: 'Shivneri Fort',
-      category: 'Birth'
-    },
-    { 
-      year: '1645', 
-      title: 'The Sacred Oath', 
-      desc: 'Oath of Swarajya taken at Raireshwar Temple.',
-      longDesc: 'At the age of 15, Shivaji Maharaj and his young Mavala friends took a solemn oath before Lord Raireshwar to establish Hindavi Swarajya—a self-ruled kingdom for the people.',
-      location: 'Raireshwar',
-      category: 'Expansion'
-    },
-    { 
-      year: '1646', 
-      title: 'The First Conquest', 
-      desc: 'Shivaji Maharaj captured Torna Fort at age 16.',
-      longDesc: 'Marking the first military victory, Shivaji Maharaj captured the massive Torna Fort. The discovery of hidden treasure here funded the construction of Rajgad, the first capital.',
-      location: 'Torna Fort',
-      category: 'Expansion'
-    },
-    { 
-      year: '1656', 
-      title: 'Conquest of Jawali', 
-      desc: 'Strategic expansion into the Konkan region.',
-      longDesc: 'By defeating the More family of Jawali, Shivaji Maharaj gained control over a massive forest region and paved the way for the construction of the mighty Pratapgad fort.',
-      location: 'Jawali Valley',
-      category: 'Expansion'
-    },
-    { 
-      year: '1659', 
-      title: 'Battle of Pratapgad', 
-      desc: 'The killing of Afzal Khan and victory over Bijapur.',
-      longDesc: 'Afzal Khan, the giant general of Bijapur, came to crush Swarajya. In a legendary one-on-one meeting, Shivaji Maharaj used Tiger Claws (Wagh Nakh) to kill him, routing his massive army.',
-      location: 'Pratapgad',
-      category: 'Battle'
-    },
-    { 
-      year: '1660', 
-      title: 'Siege of Panhala', 
-      desc: 'The heroic escape and sacrifice of Baji Prabhu.',
-      longDesc: 'Trapped at Panhala by Siddi Jauhar, Shivaji Maharaj made a daring escape at night. Baji Prabhu Deshpande fought a legendary rearguard action at Ghodkhind to ensure Maharaj reached safety.',
-      location: 'Panhala to Pavankhind',
-      category: 'Battle'
-    },
-    { 
-      year: '1663', 
-      title: 'Pune Surgical Strike', 
-      desc: 'Midnight raid on Shaista Khan at Lal Mahal.',
-      longDesc: 'In one of historys most daring raids, Shivaji Maharaj entered Pune with 400 soldiers disguised as a marriage party and attacked the Mughal Governor Shaista Khan in his own bedroom.',
-      location: 'Lal Mahal, Pune',
-      category: 'Battle'
-    },
-    { 
-      year: '1664', 
-      title: 'Raid on Surat', 
-      desc: 'Financial blow to the Mughal Empire.',
-      longDesc: 'To fund the Swarajya treasury and avenge the destruction caused by Mughal armies, Shivaji Maharaj raided Surat, the wealthiest Mughal port city on the western coast.',
-      location: 'Surat',
-      category: 'Expansion'
-    },
-    { 
-      year: '1666', 
-      title: 'Escape from Agra', 
-      desc: 'The miraculous escape from Mughal confinement.',
-      longDesc: 'After being house-arrested by Aurangzeb in Agra, Shivaji Maharaj and his son Sambhaji escaped in large sweet baskets, tricking the Mughal guards and returning safely to Rajgad.',
-      location: 'Agra',
-      category: 'Battle'
-    },
-    { 
-      year: '1670', 
-      title: 'Battle of Sinhagad', 
-      desc: 'Tanaji Malusare wins the "Lion Fort".',
-      longDesc: 'Tanaji Malusare scaled the vertical cliffs of Kondhana at night. Though he lost his life, the fort was won. Maharaj lamented, "The fort is won, but the Lion is gone."',
-      location: 'Sinhagad Fort',
-      category: 'Battle'
-    },
-    { 
-      year: '1674', 
-      title: 'Grand Coronation', 
-      desc: 'Shivaji Maharaj becomes Chhatrapati.',
-      longDesc: 'On June 6, 1674, Shivaji Maharaj was formally crowned as the Chhatrapati of the Maratha Empire at Raigad, establishing it as a sovereign Hindu kingdom.',
-      location: 'Raigad Fort',
-      category: 'Coronation'
-    },
-    { 
-      year: '1677', 
-      title: 'Southern Campaign', 
-      desc: 'Dakshin Digvijay - Expansion into South India.',
-      longDesc: 'Shivaji Maharaj led a massive campaign to the south, capturing Gingee and Vellore, and establishing a Maratha presence as far as Tanjavur, ensuring the empires survival.',
-      location: 'South India',
-      category: 'Expansion'
-    },
-    { 
-      year: '1680', 
-      title: 'Passing of the Lion', 
-      desc: 'The death of Chhatrapati Shivaji Maharaj.',
-      longDesc: 'The great founder of the Maratha Empire passed away at Raigad Fort. He left behind a legacy of administration, naval power, and the undying spirit of Swarajya.',
-      location: 'Raigad Fort',
-      category: 'Birth'
-    },
-  ];
+  useEffect(() => {
+    const eventQuery = searchParams.get('event');
+    if (eventQuery && !autoOpenDone.current) {
+      autoOpenDone.current = true;
+      const needle = eventQuery.toLowerCase();
+      const match = timelineEvents.find((e) => {
+        const title = e.title.toLowerCase();
+        return title === needle || title.includes(needle) || needle.includes(title);
+      });
+
+      if (match) {
+        setSelectedEvent(match);
+      }
+      
+      // Clean up the URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('event');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex">
@@ -128,87 +41,177 @@ export const Timeline: React.FC = () => {
       
       <main className="flex-1 lg:ml-64 p-4 md:p-8 pt-20 lg:pt-8">
         <header className="mb-12">
-          <h1 className="text-4xl font-black text-white mb-2 tracking-tight">SWARAJYA <span className="text-saffron">CHRONICLES</span></h1>
-          <p className="text-gray-500 font-light">Journey through the pivotal moments of the Maratha Empire.</p>
+          <div className="flex items-center space-x-4 mb-2">
+            <BookOpen className="w-8 h-8 text-saffron" />
+            <h1 className="text-4xl font-black text-white tracking-tight uppercase">Swarajya <span className="text-saffron">Chronicles</span></h1>
+          </div>
+          <p className="text-gray-500 font-light max-w-2xl">A detailed historical journey through the monumental events that shaped the Maratha Empire and defined a legacy of valor.</p>
         </header>
 
         <div className="relative border-l-2 border-saffron/20 ml-4 py-8">
-          {events.map((event, i) => (
+          {timelineEvents.map((event, i) => (
             <motion.div 
               key={i}
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "-50px" }}
               transition={{ delay: i * 0.1 }}
-              className="mb-12 ml-8 relative"
+              className="mb-16 ml-8 relative group"
             >
-              {/* Dot */}
-              <div className="absolute -left-[41px] top-1.5 w-4 h-4 bg-saffron rounded-full shadow-[0_0_10px_rgba(244,164,96,0.8)] border-4 border-[#0a0a0a]"></div>
+              {/* Dot with pulse effect */}
+              <div className="absolute -left-[41px] top-1.5 w-4 h-4 bg-saffron rounded-full shadow-[0_0_15px_rgba(244,164,96,0.5)] border-4 border-[#0a0a0a] z-10 group-hover:scale-125 transition-transform"></div>
               
-              <div className="bg-[#111] border border-white/5 p-6 rounded-3xl hover:border-saffron/30 transition-all cursor-pointer group max-w-2xl" onClick={() => setSelectedEvent(event)}>
-                <div className="flex justify-between items-start mb-4">
-                  <span className="px-3 py-1 bg-saffron/10 text-saffron text-xs font-bold rounded-full uppercase tracking-widest">{event.year}</span>
-                  <span className="text-[10px] text-gray-600 font-bold uppercase tracking-widest flex items-center">
-                    <MapPin className="w-3 h-3 mr-1" /> {event.location}
+              <div 
+                className="bg-[#111] border border-white/5 p-8 rounded-[2.5rem] hover:border-saffron/30 transition-all cursor-pointer shadow-xl relative overflow-hidden max-w-4xl"
+                onClick={() => setSelectedEvent(event)}
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-saffron/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-saffron/10 transition-all"></div>
+                
+                <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                  <div className="flex items-center space-x-3">
+                    <span className="px-4 py-1.5 bg-saffron/10 text-saffron text-sm font-black rounded-xl uppercase tracking-widest border border-saffron/20">{event.year}</span>
+                    <span className="text-xs text-gray-500 font-bold uppercase tracking-wider bg-white/5 px-3 py-1.5 rounded-lg border border-white/5">{event.category}</span>
+                  </div>
+                  <span
+                    className="text-[10px] text-gray-400 hover:text-white hover:bg-saffron/20 px-3 py-1.5 rounded-xl border border-white/5 transition-all flex items-center cursor-pointer group/loc backdrop-blur-md"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/forts?fort=${encodeURIComponent(event.location)}`); }}
+                  >
+                    <MapPin className="w-3 h-3 mr-2 text-saffron" /> {event.location}
                   </span>
                 </div>
-                <h3 className="text-xl font-bold mb-2 group-hover:text-saffron transition-colors">{event.title}</h3>
-                <p className="text-gray-400 font-light text-sm line-clamp-2">{event.desc}</p>
-                <div className="mt-4 flex items-center text-xs text-saffron font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                  Read Full Account <Info className="ml-2 w-4 h-4" />
+                
+                <h3 className="text-2xl md:text-3xl font-black mb-4 text-white group-hover:text-saffron transition-colors tracking-tight">{event.title}</h3>
+                <p className="text-gray-400 font-light leading-relaxed text-lg line-clamp-3 italic">
+                  {event.desc}
+                </p>
+                
+                <div className="mt-8 flex items-center justify-between">
+                  <div className="flex items-center text-xs text-saffron font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+                    Read Detailed Account <ChevronRight className="ml-2 w-4 h-4" />
+                  </div>
+                  {event.gallery.length > 0 && (
+                    <div className="flex items-center space-x-1 opacity-60">
+                      <Camera className="w-4 h-4 text-gray-500" />
+                      <span className="text-[10px] text-gray-500 font-bold">{event.gallery.length} Images</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
           ))}
         </div>
 
-        {/* Modal */}
+        {/* Enhanced Detail Modal */}
         <AnimatePresence>
           {selectedEvent && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl"
               onClick={() => setSelectedEvent(null)}
             >
               <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="bg-[#111] border border-saffron/30 w-full max-w-2xl rounded-[2.5rem] overflow-hidden shadow-[0_0_50px_rgba(244,164,96,0.1)]"
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+                className="bg-[#0d0d0d] border border-white/5 w-full max-w-5xl h-[90vh] rounded-[3rem] overflow-hidden flex flex-col md:flex-row relative shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="h-48 bg-gradient-to-br from-saffron/20 to-saffron/5 p-12 relative flex flex-col justify-end">
-                  <button 
-                    onClick={() => setSelectedEvent(null)}
-                    className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 rounded-full transition-colors text-white"
-                  >
-                    <X className="w-6 h-6" />
-                  </button>
-                  <span className="text-5xl font-black text-saffron/20 absolute left-6 top-6">{selectedEvent.year}</span>
-                  <span className="px-4 py-1 bg-saffron text-black text-xs font-black rounded-full w-fit mb-4">{selectedEvent.category}</span>
-                  <h2 className="text-3xl font-black text-white">{selectedEvent.title}</h2>
-                </div>
-                <div className="p-12">
-                  <div className="flex items-center text-gray-500 mb-6 text-sm">
-                    <Calendar className="w-4 h-4 mr-2 text-saffron" />
-                    Year {selectedEvent.year}
-                    <span className="mx-3">•</span>
-                    <MapPin className="w-4 h-4 mr-2 text-saffron" />
-                    {selectedEvent.location}
+                <button 
+                  onClick={() => setSelectedEvent(null)}
+                  className="absolute top-8 right-8 p-3 bg-white/5 hover:bg-white/10 rounded-full transition-all z-50 text-white group"
+                >
+                  <X className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+                </button>
+
+                {/* Left Sidebar - Quick Info & Gallery */}
+                <div className="md:w-1/3 bg-[#111] border-r border-white/5 overflow-y-auto custom-scrollbar p-10">
+                  <div className="mb-12">
+                    <span className="text-5xl font-black text-saffron/20 mb-4 block leading-none">{selectedEvent.year}</span>
+                    <h2 className="text-3xl font-black text-white mb-6 leading-tight">{selectedEvent.title}</h2>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center text-gray-400 text-sm">
+                         <MapPin className="w-4 h-4 mr-3 text-saffron" />
+                         {selectedEvent.location}
+                      </div>
+                      <div className="flex items-center text-gray-400 text-sm">
+                         <Info className="w-4 h-4 mr-3 text-saffron" />
+                         {selectedEvent.category} Event
+                      </div>
+                    </div>
                   </div>
-                  <p className="text-gray-300 font-light leading-relaxed text-lg">
-                    {selectedEvent.longDesc}
-                  </p>
-                  <button 
-                    onClick={() => setSelectedEvent(null)}
-                    className="mt-10 w-full py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl transition-all"
-                  >
-                    Close Scroll
-                  </button>
+
+                  {selectedEvent.gallery.length > 0 && (
+                    <div>
+                      <h4 className="text-saffron text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center">
+                        <Camera className="w-4 h-4 mr-2" /> Gallery
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        {selectedEvent.gallery.map((img, idx) => (
+                          <motion.div 
+                            key={idx}
+                            whileHover={{ scale: 1.02 }}
+                            className="aspect-video rounded-2xl overflow-hidden cursor-pointer border border-white/5 hover:border-saffron/40 transition-all shadow-lg"
+                            onClick={() => setActiveImage(img)}
+                          >
+                            <img src={img} alt={`Moment ${idx}`} className="w-full h-full object-cover" />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Content - Long Form Text */}
+                <div className="md:w-2/3 p-12 md:p-20 overflow-y-auto custom-scrollbar bg-[#0d0d0d]">
+                  <div className="max-w-2xl mx-auto">
+                    <Quote className="w-12 h-12 text-saffron/10 mb-8" />
+                    <div className="space-y-8">
+                      {selectedEvent.longDesc.split('\n\n').map((paragraph, i) => (
+                        <p key={i} className="text-gray-400 font-light leading-relaxed text-xl">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-16 pt-16 border-t border-white/5">
+                      <button 
+                        onClick={() => navigate(`/forts?fort=${encodeURIComponent(selectedEvent.location)}`)}
+                        className="w-full py-5 bg-saffron text-black font-black rounded-2xl hover:bg-saffron-light transition-all flex items-center justify-center space-x-3 active:scale-95 shadow-2xl shadow-saffron/20"
+                      >
+                        <MapPin className="w-6 h-6" />
+                        <span>Visit {selectedEvent.location} in History</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Image Fullscreen View */}
+        <AnimatePresence>
+          {activeImage && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/98"
+              onClick={() => setActiveImage(null)}
+            >
+              <button className="absolute top-8 right-8 text-white p-4 hover:bg-white/10 rounded-full transition-all">
+                <X className="w-10 h-10" />
+              </button>
+              <motion.img 
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                src={activeImage} 
+                alt="Full View" 
+                className="max-w-full max-h-full rounded-3xl shadow-2xl border border-white/10"
+                onClick={(e) => e.stopPropagation()}
+              />
             </motion.div>
           )}
         </AnimatePresence>

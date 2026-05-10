@@ -13,11 +13,30 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+const normalizeActivities = (payload: any): any[] => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.activities)) return payload.activities;
+  return [];
+};
+
+const readJson = async (response: Response) => {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+};
+
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [overallProgress, setOverallProgress] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -27,40 +46,70 @@ export const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
       // 1. Fetch Profile
-      const profRes = await fetch(`http://localhost:5000/api/profile/${user?.id}`);
+      const profRes = await fetch(`/api/profile/${user?.id}`, { headers });
       if (profRes.ok) {
-        const payload = await profRes.json();
+        const payload = await readJson(profRes);
         const profile = payload.data || payload;
         if (profile) {
           const realScore = profile.total_score || profile.score || profile.points || profile.xp || 0;
-          const realProgress = profile.progress || profile.completion || profile.percentage || 0;
           const realRank = profile.rank || profile.status || 'Soldier';
           
           setUserData({
             ...profile,
             total_score: realScore,
-            progress: realProgress,
             rank: realRank
           });
         }
       }
 
-      // 2. Fetch recent activities
-      const actRes = await fetch(`http://localhost:5000/api/activities/${user?.id}`);
-      if (actRes.ok) {
-        const payload = await actRes.json();
-        const acts = payload.data || payload;
-        setActivities(acts || []);
+      // 2. Fetch quiz progress to compute real overall completion
+      try {
+        const progressRes = await fetch(`/api/progress/${user?.id}`, { headers });
+        if (progressRes.ok) {
+          const progressPayload = await readJson(progressRes);
+          const levels = progressPayload.levels || [];
+          const progressRows = Array.isArray(progressPayload.data) ? progressPayload.data : [];
+
+          // Count completed quizzes from the levels breakdown
+          let completedQuizzes = 0;
+          let totalQuizzes = 0;
+
+          if (levels.length > 0) {
+            levels.forEach((level: any) => {
+              completedQuizzes += level.completedQuizzes || 0;
+              totalQuizzes += level.totalQuizzes || 9;
+            });
+          } else {
+            // Fallback: count from raw progress rows
+            totalQuizzes = 10 * 9; // 10 levels x 9 quizzes
+            completedQuizzes = progressRows.filter(
+              (row: any) => row.completed && (row.best_score ?? row.score ?? 0) >= 70
+            ).length;
+          }
+
+          const pct = totalQuizzes > 0 ? Math.round((completedQuizzes / totalQuizzes) * 100) : 0;
+          setOverallProgress(pct);
+        }
+      } catch (progressErr) {
+        console.warn('Could not fetch quiz progress:', progressErr);
       }
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
+
+      // 3. Fetch recent activities
+      const actRes = await fetch(`/api/activities/${user?.id}`, { headers });
+      if (actRes.ok) {
+        const payload = await readJson(actRes);
+        setActivities(normalizeActivities(payload));
+      } else {
+        setActivities([]);
+      }
+    } catch {
+      setActivities([]);
     } finally {
       setLoading(false);
     }
   };
-
-
 
   const quickLinks = [
     { title: 'Historical Timeline', icon: <History />, color: 'bg-blue-500/10 text-blue-500', path: '/timeline', desc: 'Journey through the ages' },
@@ -83,7 +132,7 @@ export const Dashboard: React.FC = () => {
           </div>
           <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-saffron bg-saffron/5 px-4 py-2 rounded-full border border-saffron/20">
             <span className="w-2 h-2 bg-saffron rounded-full animate-pulse"></span>
-            Live Campaign
+            {userData?.rank || 'Live Campaign'} - {userData?.total_score || 0} XP
           </div>
         </header>
 
@@ -105,15 +154,11 @@ export const Dashboard: React.FC = () => {
               <div className="relative z-10 flex flex-col items-center text-center">
                 <span className="text-6xl text-saffron/20 font-serif leading-none absolute -top-4 -left-2">"</span>
                 <p className="text-2xl md:text-4xl font-light text-white leading-relaxed italic mb-8 relative z-10">
-                  Swaraj is my birthright and I shall have it!
-                </p>
+                Never Bend Your Head Always Hold It High </p>
                 <div className="h-px w-24 bg-saffron/50 mb-6"></div>
-                <p className="text-lg md:text-xl font-black text-saffron uppercase tracking-[0.2em]">
-                  Bal Gangadhar Tilak
-                </p>
-                <p className="text-sm md:text-base text-gray-500 mt-3 font-light max-w-2xl mx-auto">
-                  Often called the "Father of Swaraj," his defining slogan ignited the spirit of freedom across the nation.
-                </p>
+                <p className="text-lg md:text-xl font-black text-saffron uppercase tracking-[0.2em]" >
+               THE FEARLESS EMPEROR   </p>
+                 
               </div>
             </motion.div>
 
@@ -162,7 +207,9 @@ export const Dashboard: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">{act.activity_name || 'Expedition Completed'}</p>
-                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">{new Date(act.created_at).toLocaleDateString()}</p>
+                          <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                            {act.created_at ? new Date(act.created_at).toLocaleDateString() : 'Recently'}
+                          </p>
                         </div>
                       </div>
                     ))
@@ -175,12 +222,12 @@ export const Dashboard: React.FC = () => {
             <div className="bg-[#111] border border-white/5 p-8 rounded-[2.5rem] relative overflow-hidden">
               <div className="relative z-10">
                 <h2 className="text-2xl font-bold mb-2">Overall Progress</h2>
-                <p className="text-gray-500 text-sm mb-8">You are currently at <span className="text-saffron font-bold">{userData?.progress || 0}%</span> completion of the Swarajya Chronicles.</p>
+                <p className="text-gray-500 text-sm mb-8">You are currently at <span className="text-saffron font-bold">{overallProgress}%</span> completion of the Swarajya Chronicles.</p>
                 
                 <div className="w-full h-4 bg-white/5 rounded-full overflow-hidden mb-4">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${userData?.progress || 0}%` }}
+                    animate={{ width: `${overallProgress}%` }}
                     transition={{ duration: 1.5, ease: "easeOut" }}
                     className="h-full bg-gradient-to-r from-saffron to-saffron-light shadow-[0_0_20px_rgba(244,164,96,0.4)]"
                   ></motion.div>
@@ -188,8 +235,8 @@ export const Dashboard: React.FC = () => {
                 
                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-600">
                   <span>Mavala</span>
-                  <span className={userData?.progress >= 50 ? 'text-saffron' : ''}>Sardar</span>
-                  <span className={userData?.progress >= 100 ? 'text-saffron' : ''}>Subhedar</span>
+                  <span className={overallProgress >= 50 ? 'text-saffron' : ''}>Sardar</span>
+                  <span className={overallProgress >= 100 ? 'text-saffron' : ''}>Subhedar</span>
                 </div>
               </div>
             </div>

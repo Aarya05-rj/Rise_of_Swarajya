@@ -13,7 +13,7 @@ interface Powada {
 }
 
 export const Powadas: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
 
   const [playlist, setPlaylist] = useState<Powada[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +108,10 @@ export const Powadas: React.FC = () => {
       try {
         await fetch('/api/log-activity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             user_id: user.id,
             activity_type: 'powada',

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, RefreshCw, Trophy } from 'lucide-react';
+import { ArrowLeft, ArrowRight, RefreshCw, Trophy } from 'lucide-react';
 import { StarRating } from './StarRating';
 
 interface QuizResultProps {
@@ -7,11 +7,12 @@ interface QuizResultProps {
   total: number;
   stars: number;
   canGoNext: boolean;
+  onBack: () => void;
   onRetry: () => void;
   onNextQuiz: () => void;
 }
 
-export const QuizResult = ({ score, total, stars, canGoNext, onRetry, onNextQuiz }: QuizResultProps) => (
+export const QuizResult = ({ score, total, stars, canGoNext, onBack, onRetry, onNextQuiz }: QuizResultProps) => (
   <div className="relative mx-auto flex min-h-screen max-w-2xl items-center px-4 py-10 text-cream">
     <motion.div
       initial={{ opacity: 0, scale: 0.92 }}
@@ -37,6 +38,13 @@ export const QuizResult = ({ score, total, stars, canGoNext, onRetry, onNextQuiz
       </div>
 
       <div className="relative z-10">
+        <button
+          type="button"
+          onClick={onBack}
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-black text-cream/75 transition hover:border-saffron/50 hover:text-saffron"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back
+        </button>
         <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full bg-saffron/15 text-saffron">
           <Trophy className="h-12 w-12" />
         </div>

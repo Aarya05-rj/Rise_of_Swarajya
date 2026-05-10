@@ -4,46 +4,7 @@ import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Shield, Award, Edit2, Save, X, Camera, Loader2, Flame, Star, Trophy } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
-import { getQuizProgress } from '../services/api';
-import type { QuizProgress } from '../components/quiz/types';
-
-const isSameDay = (a: Date, b: Date) =>
-  a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
-
-const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-const calculateStreak = (progress: QuizProgress[]) => {
-  const completedDays = Array.from(
-    new Set(
-      progress
-        .filter((item) => item.completed && item.updated_at)
-        .map((item) => startOfDay(new Date(item.updated_at as string)).getTime())
-    )
-  ).sort((a, b) => b - a);
-
-  if (!completedDays.length) return 0;
-
-  const today = startOfDay(new Date());
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
-  let cursor = isSameDay(new Date(completedDays[0]), today)
-    ? today
-    : isSameDay(new Date(completedDays[0]), yesterday)
-      ? yesterday
-      : null;
-
-  if (!cursor) return 0;
-
-  let streak = 0;
-  for (const day of completedDays) {
-    if (day !== cursor.getTime()) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return streak;
-};
+import { getUserStats } from '../services/api';
 
 const getRank = (xp: number) => {
   if (xp >= 5000) return 'Chhatrapati';
@@ -53,66 +14,113 @@ const getRank = (xp: number) => {
   return 'Soldier';
 };
 
-const getQuizStats = (progress: QuizProgress[]) => {
-  const completed = progress.filter((item) => item.completed);
-  const xp = completed.reduce((total, item) => total + item.score * 10 + item.stars * 25, 0);
-  const totalStars = completed.reduce((total, item) => total + item.stars, 0);
-  const bestScore = completed.reduce((best, item) => Math.max(best, item.score), 0);
-  const perfectQuizzes = completed.filter((item) => item.score === 10).length;
-  const streak = calculateStreak(completed);
-
-  return {
-    completedCount: completed.length,
-    xp,
-    totalStars,
-    bestScore,
-    perfectQuizzes,
-    streak,
-    rank: getRank(xp),
-    milestoneProgress: Math.min((xp / 1000) * 100, 100),
-    completionPercent: Math.round((completed.length / 90) * 100),
-  };
+const emptyStats = {
+  totalAttempts: 0,
+  averageScore: 0,
+  bestScore: 0,
+  totalXp: 0,
+  perfectScores: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  lastActiveDate: null,
+  recentAttempts: [],
 };
+
+const normalizeStats = (value: any) => ({
+  ...emptyStats,
+  ...(value && typeof value === 'object' ? value : {}),
+  recentAttempts: Array.isArray(value?.recentAttempts) ? value.recentAttempts : [],
+});
+
+const getQuizLabel = (attempt: any) => {
+  const rawQuizId = String(attempt?.quiz_id || '');
+  if (rawQuizId.includes('-')) return `Level ${attempt.level_id || rawQuizId.split('-')[0]} Quiz ${rawQuizId.split('-')[1]}`;
+  if (Number.isInteger(Number(attempt?.quiz_id)) && Number(attempt.quiz_id) >= 100) {
+    return `Level ${Math.floor(Number(attempt.quiz_id) / 100)} Quiz ${Number(attempt.quiz_id) % 100}`;
+  }
+  return `Level ${attempt?.level_id || 1} Quiz ${attempt?.quiz_id || 1}`;
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return 'Recently';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Recently' : date.toLocaleDateString();
+};
+
+const getSafeAvatarUrl = (value?: string) => {
+  if (!value) return '';
+  return value.includes('/storage/v1/object/avatars/') ? '' : value;
+};
+
+const createAvatarDataUrl = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onerror = () => reject(new Error('Could not read the selected image.'));
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onerror = () => reject(new Error('Could not load the selected image.'));
+      image.onload = () => {
+        const maxSize = 384;
+        const scale = Math.min(maxSize / image.width, maxSize / image.height, 1);
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+
+        if (!context) {
+          reject(new Error('Could not prepare the selected image.'));
+          return;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+
+      image.src = String(reader.result || '');
+    };
+
+    reader.readAsDataURL(file);
+  });
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [profileData, setProfileData] = useState<any>(null);
-  const [quizProgress, setQuizProgress] = useState<QuizProgress[]>([]);
+  const [userStats, setUserStats] = useState<any>(emptyStats);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const quizStats = React.useMemo(() => {
-    return getQuizStats(quizProgress);
-  }, [quizProgress]);
-
   const achievements = [
     {
       title: 'First Conquest',
-      desc: quizStats.completedCount > 0 ? `Completed ${quizStats.completedCount} quiz${quizStats.completedCount > 1 ? 'zes' : ''}` : 'Complete your first quiz',
-      unlocked: quizStats.completedCount > 0,
-      icon: <Award className={quizStats.completedCount > 0 ? 'text-yellow-500' : 'text-gray-600'} />,
+      desc: userStats.totalAttempts > 0 ? `Completed ${userStats.totalAttempts} attempt${userStats.totalAttempts > 1 ? 's' : ''}` : 'Complete your first quiz',
+      unlocked: userStats.totalAttempts > 0,
+      icon: <Award className={userStats.totalAttempts > 0 ? 'text-yellow-500' : 'text-gray-600'} />,
     },
     {
       title: 'History Buff',
-      desc: quizStats.perfectQuizzes > 0 ? `${quizStats.perfectQuizzes} perfect quiz${quizStats.perfectQuizzes > 1 ? 'zes' : ''}` : 'Score 10/10 in a quiz',
-      unlocked: quizStats.perfectQuizzes > 0,
-      icon: <Trophy className={quizStats.perfectQuizzes > 0 ? 'text-blue-500' : 'text-gray-600'} />,
+      desc: userStats.perfectScores > 0 ? `${userStats.perfectScores} perfect quiz${userStats.perfectScores > 1 ? 'zes' : ''}` : 'Score 100 in a quiz',
+      unlocked: userStats.perfectScores > 0,
+      icon: <Trophy className={userStats.perfectScores > 0 ? 'text-blue-500' : 'text-gray-600'} />,
     },
     {
       title: 'Streak Keeper',
-      desc: quizStats.streak > 0 ? `${quizStats.streak} day learning streak` : 'Complete quizzes on consecutive days',
-      unlocked: quizStats.streak > 0,
-      icon: <Flame className={quizStats.streak > 0 ? 'text-orange-500' : 'text-gray-600'} />,
+      desc: userStats.currentStreak >= 5 ? `${userStats.currentStreak} day learning streak` : 'Maintain a 5 day streak',
+      unlocked: userStats.currentStreak >= 5,
+      icon: <Flame className={userStats.currentStreak >= 5 ? 'text-orange-500' : 'text-gray-600'} />,
     },
     {
       title: 'Star Collector',
-      desc: quizStats.totalStars > 0 ? `${quizStats.totalStars} total stars earned` : 'Earn stars from quiz results',
-      unlocked: quizStats.totalStars > 0,
-      icon: <Star className={quizStats.totalStars > 0 ? 'text-royal-gold' : 'text-gray-600'} />,
+      desc: userStats.totalXp > 0 ? `Earned ${userStats.totalXp} XP` : 'Earn XP from quizzes',
+      unlocked: userStats.totalXp > 0,
+      icon: <Star className={userStats.totalXp > 0 ? 'text-royal-gold' : 'text-gray-600'} />,
     },
   ];
 
@@ -125,26 +133,29 @@ export const Profile: React.FC = () => {
 
   const fetchProfile = async () => {
     try {
-      const [profileResponse, progressResponse] = await Promise.all([
+      const [profileResponse, statsResponse] = await Promise.all([
         fetch(`/api/profile/${user?.id}`),
-        getQuizProgress(user?.id || ''),
+        getUserStats(user?.id || ''),
       ]);
 
       if (!profileResponse.ok) throw new Error('Failed to fetch profile');
 
       const profileResult = await profileResponse.json();
       const data = profileResult.data || profileResult;
-      const progress = progressResponse.data || [];
-      const freshStats = getQuizStats(progress);
-      setQuizProgress(progress);
+      
+      if (statsResponse.success && statsResponse.data) {
+        setUserStats(normalizeStats(statsResponse.data));
+      }
+
+      const freshStats = normalizeStats(statsResponse.data);
       
       // Smart mapping for flexible column names
       const mappedData = {
         ...data,
-        total_score: freshStats.xp || data.total_score || data.score || data.points || data.xp || 0,
-        progress: freshStats.completionPercent,
-        rank: freshStats.rank || data.rank || data.status || 'Soldier',
-        streak: freshStats.streak || data.streak || data.learning_streak || 0
+        total_score: freshStats.totalXp || data.total_score || data.score || data.points || data.xp || 0,
+        progress: Math.min(((freshStats.totalAttempts || 0) / 90) * 100, 100),
+        rank: getRank(freshStats.totalXp || 0) || data.rank || data.status || 'Soldier',
+        streak: freshStats.currentStreak || data.streak || data.learning_streak || 0
       };
       
       setProfileData(mappedData);
@@ -196,19 +207,7 @@ export const Profile: React.FC = () => {
 
     setUploadingAvatar(true);
     try {
-      const extension = file.name.split('.').pop() || 'jpg';
-      const filePath = `${user.id}/avatar-${Date.now()}.${extension}`;
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      const avatarUrl = data.publicUrl;
+      const avatarUrl = await createAvatarDataUrl(file);
 
       const { error: authErr } = await supabase.auth.updateUser({
         data: { avatar_url: avatarUrl },
@@ -226,9 +225,8 @@ export const Profile: React.FC = () => {
 
       setProfileData((current: any) => ({ ...current, avatar_url: avatarUrl }));
     } catch (err) {
-      console.error('Error uploading avatar:', err);
-      const message = err instanceof Error ? err.message : 'Make sure the Supabase avatars bucket exists.';
-      alert(`Could not upload profile photo. ${message}`);
+      const message = err instanceof Error ? err.message : 'Could not update profile photo.';
+      alert(message);
     } finally {
       setUploadingAvatar(false);
       event.target.value = '';
@@ -284,11 +282,12 @@ export const Profile: React.FC = () => {
                       className="hidden"
                       onChange={handleAvatarChange}
                     />
-                    {profileData?.avatar_url ? (
+                    {getSafeAvatarUrl(profileData?.avatar_url) ? (
                       <img 
-                        src={profileData.avatar_url} 
+                        src={getSafeAvatarUrl(profileData?.avatar_url)} 
                         alt="Avatar" 
                         className="w-32 h-32 rounded-[2.5rem] object-cover shadow-[0_0_50px_rgba(244,164,96,0.1)]"
+                        onError={() => setProfileData((current: any) => ({ ...current, avatar_url: '' }))}
                       />
                     ) : (
                       <div className="w-32 h-32 bg-saffron/20 rounded-[2.5rem] flex items-center justify-center text-saffron text-4xl font-black shadow-[0_0_50px_rgba(244,164,96,0.1)]">
@@ -317,7 +316,7 @@ export const Profile: React.FC = () => {
                     ) : (
                       <h2 className="text-3xl font-black text-white mb-2">{profileData?.full_name || user?.user_metadata?.full_name || 'Anonymous Warrior'}</h2>
                     )}
-                    <p className="text-saffron font-bold uppercase tracking-widest text-xs mb-6">{quizStats.rank || profileData?.rank || 'Mavala'} Rank</p>
+                    <p className="text-saffron font-bold uppercase tracking-widest text-xs mb-6">{profileData?.rank || 'Mavala'} Rank</p>
                     
                     <div className="space-y-4">
                       <div className="flex items-center space-x-3 text-gray-400 font-light">
@@ -337,15 +336,22 @@ export const Profile: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Learning Streak</h3>
-                  <div className="flex items-end space-x-2">
-                    <span className="text-5xl font-black text-white">{quizStats.streak}</span>
-                    <span className="text-saffron font-bold mb-2">DAYS</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-end space-x-2">
+                      <span className="text-5xl font-black text-white">{userStats.currentStreak}</span>
+                      <span className="text-saffron font-bold mb-2">DAYS</span>
+                    </div>
+                    {userStats.lastActiveDate && (
+                      <span className="text-xs text-gray-500 mt-2 uppercase tracking-widest">
+                        Last active: {new Date(userStats.lastActiveDate).toLocaleDateString()}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Total Knowledge Units</h3>
                   <div className="flex items-end space-x-2">
-                    <span className="text-5xl font-black text-white">{quizStats.xp}</span>
+                    <span className="text-5xl font-black text-white">{userStats.totalXp}</span>
                     <span className="text-saffron font-bold mb-2">XP</span>
                   </div>
                 </div>
@@ -353,16 +359,55 @@ export const Profile: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-[#111] border border-white/5 p-6 rounded-3xl">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Quizzes Completed</h3>
-                  <p className="text-3xl font-black text-white">{quizStats.completedCount}</p>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Quiz Attempts</h3>
+                  <p className="text-3xl font-black text-white">{userStats.totalAttempts}</p>
                 </div>
                 <div className="bg-[#111] border border-white/5 p-6 rounded-3xl">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Best Result</h3>
-                  <p className="text-3xl font-black text-white">{quizStats.bestScore}/10</p>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Best Score</h3>
+                  <p className="text-3xl font-black text-white">{userStats.bestScore}%</p>
                 </div>
                 <div className="bg-[#111] border border-white/5 p-6 rounded-3xl">
-                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Stars Earned</h3>
-                  <p className="text-3xl font-black text-white">{quizStats.totalStars}</p>
+                  <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Average Score</h3>
+                  <p className="text-3xl font-black text-white">{userStats.averageScore}%</p>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="mt-8">
+                <h2 className="text-xl font-bold flex items-center mb-6">
+                  <span className="w-1 h-6 bg-saffron mr-3 rounded-full"></span>
+                  Recent Attempts
+                </h2>
+                <div className="bg-[#111] border border-white/5 rounded-3xl overflow-hidden">
+                  {userStats.recentAttempts.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500 font-light">No quizzes attempted yet.</div>
+                  ) : (
+                    <div className="divide-y divide-white/5">
+                      {userStats.recentAttempts.map((attempt: any, index: number) => (
+                        <div key={index} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-saffron/10 rounded-2xl flex items-center justify-center text-saffron">
+                              <Trophy className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white">{getQuizLabel(attempt)}</h4>
+                              <p className="text-xs text-gray-500 uppercase tracking-widest mt-1">
+                                {formatDate(attempt.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xl font-black text-white">{attempt.score}%</div>
+                            <div className="flex items-center justify-end space-x-1 mt-1">
+                              {Array.from({ length: 3 }).map((_, i) => (
+                                <Star key={i} className={`w-3 h-3 ${i < attempt.stars ? 'text-royal-gold fill-current' : 'text-gray-700'}`} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -399,7 +444,7 @@ export const Profile: React.FC = () => {
                 <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-saffron" 
-                    style={{ width: `${quizStats.milestoneProgress}%` }}
+                    style={{ width: `${Math.min((userStats.totalXp / 1000) * 100, 100)}%` }}
                   ></div>
                 </div>
               </div>
