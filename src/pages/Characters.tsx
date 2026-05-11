@@ -65,7 +65,10 @@ export const Characters: React.FC = () => {
           wars: !apiChar.wars || apiChar.wars.length === 0 ? (localMatch.wars || []) : apiChar.wars,
           born: apiChar.born || localMatch.born,
           died: apiChar.died || localMatch.died,
-          quote: apiChar.quote || localMatch.quote
+          quote: apiChar.quote || localMatch.quote,
+          weapon_of_choice: apiChar.weapon_of_choice || localMatch.weapon_of_choice,
+          respected_rank: apiChar.respected_rank || localMatch.respected_rank,
+          born_place: apiChar.born_place || localMatch.born_place
         };
       }
       return apiChar;
@@ -251,6 +254,49 @@ export const Characters: React.FC = () => {
                         </div>
                       </section>
                     )}
+
+                    {/* Respected Stats Table */}
+                    <section className="mb-16">
+                      <h4 className="text-saffron text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center">
+                        <Award className="w-4 h-4 mr-3" /> Respected Chronicles
+                      </h4>
+                      <div className="overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02]">
+                        <table className="w-full text-left text-sm">
+                          <tbody className="divide-y divide-white/5">
+                            <tr>
+                              <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Birth</td>
+                              <td className="px-6 py-4 text-gray-300">{selectedChar.born || '16xx'}</td>
+                            </tr>
+                            <tr>
+                              <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Death</td>
+                              <td className="px-6 py-4 text-gray-300">{selectedChar.died || '16xx'}</td>
+                            </tr>
+                            {selectedChar.born_place && (
+                              <tr>
+                                <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Birth Place</td>
+                                <td className="px-6 py-4 text-gray-300">{selectedChar.born_place}</td>
+                              </tr>
+                            )}
+                            {selectedChar.respected_rank && (
+                              <tr>
+                                <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Title/Rank</td>
+                                <td className="px-6 py-4 text-saffron font-bold uppercase tracking-wider">{selectedChar.respected_rank}</td>
+                              </tr>
+                            )}
+                            {selectedChar.weapon_of_choice && (
+                              <tr>
+                                <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Weapon</td>
+                                <td className="px-6 py-4 text-gray-300">{selectedChar.weapon_of_choice}</td>
+                              </tr>
+                            )}
+                            <tr>
+                              <td className="px-6 py-4 font-black text-gray-500 uppercase tracking-widest text-[10px]">Role</td>
+                              <td className="px-6 py-4 text-gray-300">{selectedChar.role}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
 
                     <div className="p-8 bg-saffron/5 border border-saffron/10 rounded-[2rem] relative overflow-hidden group">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-saffron/5 rounded-full blur-3xl -mr-16 -mt-16"></div>

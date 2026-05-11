@@ -21,8 +21,8 @@ export const Navbar: React.FC = () => {
     <nav className={`fixed w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md border-b border-saffron/20 py-3' : 'bg-transparent py-5'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <Shield className="w-8 h-8 text-saffron fill-saffron/20" />
+          <div className="flex items-center space-x-3">
+            <img src="/logo.png" alt="Swarajya Logo" className="w-12 h-12 object-contain" />
             <span className="text-2xl font-bold tracking-wider text-white">
               RISE OF <span className="text-saffron">SWARAJYA</span>
             </span>

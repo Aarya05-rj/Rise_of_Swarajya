@@ -18,24 +18,59 @@ export const Register: React.FC = () => {
     setError(null);
 
     try {
+      console.log('[Registration] Attempting minimal sign up for:', email);
+      
+      // Perform a minimal sign-up without metadata to avoid trigger conflicts
       const { error: signUpError, data } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            full_name: name,
-          },
-        },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('[Registration Error] Supabase Auth Error:', signUpError);
+        throw signUpError;
+      }
 
       if (data.user) {
-        // Success - navigate to dashboard (auto login usually works if email confirm is disabled)
+        console.log('[Registration] Auth successful, user ID:', data.user.id);
+        
+        // Manual Sync: Create/Update the profile with the name
+        // We do this via our backend which has service role access
+        try {
+          const syncRes = await fetch(`/api/profile/${data.user.id}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              full_name: name,
+              id: data.user.id 
+            })
+          });
+          
+          if (!syncRes.ok) {
+            const syncErr = await syncRes.json();
+            console.warn('[Registration Warning] Profile sync failed:', syncErr);
+          }
+        } catch (syncErr) {
+          console.warn('[Registration Warning] Profile sync network error:', syncErr);
+        }
+
+        // Success - navigate to dashboard
         navigate('/dashboard');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to register');
+      console.error('[Registration Critical] Error details:', err);
+      const rawMessage = err.message || '';
+      let errorMessage = rawMessage || 'An unexpected error occurred during registration.';
+      
+      if (rawMessage.includes('Database error saving new user')) {
+        errorMessage = 'Database sync error: Our chronicles are having trouble recording your entry. Please try again or contact support.';
+      } else if (rawMessage.includes('already registered')) {
+        errorMessage = 'This warrior is already in our records. Please sign in instead.';
+      } else if (rawMessage.includes('Password')) {
+        errorMessage = 'The secret code (password) must be stronger (at least 6 characters).';
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -71,8 +106,8 @@ export const Register: React.FC = () => {
 
           <div className="text-center mb-10">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-saffron/10 rounded-2xl text-saffron">
-                <Shield className="w-10 h-10" />
+              <div className="p-1 bg-saffron/5 rounded-2xl overflow-hidden">
+                <img src="/logo.png" alt="Swarajya Logo" className="w-20 h-20 object-contain" />
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-2">Join the Swarajya</h1>

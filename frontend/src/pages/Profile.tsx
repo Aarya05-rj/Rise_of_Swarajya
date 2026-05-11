@@ -324,7 +324,9 @@ export const Profile: React.FC = () => {
                         <span>{user?.email}</span>
                       </div>
                       <div className="flex items-center space-x-3 text-gray-400 font-light">
-                        <Shield className="w-4 h-4 text-gray-600" />
+                        <div className="w-4 h-4 flex items-center justify-center grayscale opacity-60">
+                          <img src="/logo.png" alt="Swarajya Logo" className="w-full h-full object-contain" />
+                        </div>
                         <span>Joined Swarajya in {profileData?.created_at ? new Date(profileData.created_at).getFullYear() : '2026'}</span>
                       </div>
                     </div>

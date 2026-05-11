@@ -107,8 +107,8 @@ export const Landing: React.FC = () => {
                 className="absolute -bottom-6 -left-6 lg:-left-12 bg-[#111]/90 backdrop-blur-md border border-saffron/30 p-6 rounded-[2rem] shadow-2xl z-20"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-saffron/10 rounded-2xl flex items-center justify-center text-saffron">
-                    <Shield className="w-7 h-7" />
+                  <div className="w-14 h-14 bg-saffron/5 rounded-2xl flex items-center justify-center overflow-hidden">
+                    <img src="/logo.png" alt="Swarajya Logo" className="w-12 h-12 object-contain" />
                   </div>
                   <div>
                     <p className="text-[10px] font-black text-saffron uppercase tracking-[0.3em] mb-1">Founder</p>

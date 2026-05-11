@@ -12,9 +12,6 @@ export interface Character {
   died?: string;
   quote?: string;
   legacy?: string;
-  born_place?: string;
-  weapon_of_choice?: string;
-  respected_rank?: string;
 }
 
 export const legendaryCharacters: Character[] = [

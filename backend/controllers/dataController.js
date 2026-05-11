@@ -141,9 +141,19 @@ exports.getForts = async (req, res) => {
 exports.getCharacters = async (req, res) => {
   try {
     const db = getRequestSupabase(req);
-    const { data, error } = await db.from('characters').select('*');
+    const { data, error } = await db
+      .from('characters')
+      .select('*, character_achievements(achievement), character_wars(war_name)');
+    
     if (error) throw error;
-    res.json({ success: true, data });
+    
+    const transformed = (data || []).map(char => ({
+      ...char,
+      achievements: (char.character_achievements || []).map(a => a.achievement),
+      wars: (char.character_wars || []).map(w => w.war_name)
+    }));
+
+    res.json({ success: true, data: transformed });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -153,7 +163,6 @@ exports.getPowadas = async (req, res) => {
   try {
     const db = getRequestSupabase(req);
     const { data, error } = await db.from('powada').select('*');
-    if (error) throw error;
     if (error) throw error;
     res.json({ success: true, data });
   } catch (error) {
@@ -215,7 +224,6 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 };
-
 
 exports.updateScore = async (req, res) => {
   try {

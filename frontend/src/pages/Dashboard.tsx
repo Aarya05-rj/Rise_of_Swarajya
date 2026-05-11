@@ -12,7 +12,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getQuizProgress } from '../services/api';
+import { getQuizProgress, getUserStats, getProfile } from '../services/api';
 
 const normalizeActivities = (payload: any): any[] => {
   if (Array.isArray(payload)) return payload;
@@ -47,45 +47,31 @@ export const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
-      // 1. Fetch Profile
-      const [profRes, progressResult] = await Promise.allSettled([
-        fetch(`/api/profile/${user?.id}`, { headers }),
-        getQuizProgress(user?.id || ''),
+      
+      // Fetch everything in parallel
+      // Fetch everything using our API helpers which handle tokens better
+      const [stats, profile] = await Promise.all([
+        getUserStats(user?.id || ''),
+        getProfile(user?.id || '')
       ]);
-      const quizProgress = progressResult.status === 'fulfilled' ? progressResult.value.data || [] : [];
-      const completedQuizzes = quizProgress.filter((item: any) => item.completed).length;
-      const realQuizProgress = Math.round((completedQuizzes / 90) * 100);
-      const realQuizScore = quizProgress
-        .filter((item: any) => item.completed)
-        .reduce((total: number, item: any) => total + item.score * 10 + item.stars * 25, 0);
 
-      if (profRes.status === 'fulfilled' && profRes.value.ok) {
-        const profile = await readJson(profRes.value);
-        if (profile) {
-          const profileData = profile.data || profile;
-          const realScore = realQuizScore || profileData.total_score || profileData.score || profileData.points || profileData.xp || 0;
-          const realProgress = realQuizProgress;
-          const realRank = profileData.rank || profileData.status || 'Soldier';
-          
-          setUserData({
-            ...profileData,
-            total_score: realScore,
-            progress: realProgress,
-            rank: realRank
-          });
-        }
+      if (stats.success) {
+        const s = stats.data;
+        setUserData((prev: any) => ({
+          ...prev,
+          total_score: s.totalXp,
+          progress: Math.round((s.totalAttempts / 90) * 100),
+          rank: s.totalXp > 500 ? 'Sardar' : s.totalXp > 200 ? 'Warrior' : 'Soldier',
+          currentStreak: s.currentStreak
+        }));
+        setActivities(s.recentAttempts || []);
       }
 
-      // 2. Fetch recent activities
-      const actRes = await fetch(`/api/activities/${user?.id}`, { headers });
-      if (actRes.ok) {
-        const acts = await readJson(actRes);
-        setActivities(normalizeActivities(acts));
-      } else {
-        setActivities([]);
+      if (profile.success) {
+        setUserData((prev: any) => ({ ...prev, ...profile.data }));
       }
-    } catch {
-      setActivities([]);
+    } catch (err) {
+      console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -112,9 +98,15 @@ export const Dashboard: React.FC = () => {
             </h1>
             <p className="text-gray-500 font-light italic">"Freedom is the fruit of bravery."</p>
           </div>
-          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-saffron bg-saffron/5 px-4 py-2 rounded-full border border-saffron/20">
-            <span className="w-2 h-2 bg-saffron rounded-full animate-pulse"></span>
-            Live Campaign
+          <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-saffron bg-saffron/5 px-4 py-2 rounded-full border border-saffron/20">
+              <span className="w-2 h-2 bg-saffron rounded-full animate-pulse"></span>
+              Live Campaign
+            </div>
+            <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-orange-500 bg-orange-500/5 px-4 py-2 rounded-full border border-orange-500/20">
+              <span className="text-lg">🔥</span>
+              <span>{userData?.currentStreak || 0} DAY STREAK</span>
+            </div>
           </div>
         </header>
 
@@ -185,13 +177,15 @@ export const Dashboard: React.FC = () => {
                   ) : (
                     activities.map((act, i) => (
                       <div key={i} className="flex items-start space-x-4 p-4 hover:bg-white/5 rounded-2xl transition-colors group">
-                        <div className="w-10 h-10 bg-saffron/10 rounded-xl flex items-center justify-center text-saffron group-hover:bg-saffron group-hover:text-black transition-colors">
-                          <Shield className="w-5 h-5" />
+                        <div className="w-10 h-10 bg-saffron/10 rounded-xl flex items-center justify-center group-hover:bg-saffron transition-colors overflow-hidden p-2">
+                          <HelpCircle className="w-5 h-5 text-saffron group-hover:text-white" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-white">{act.activity_name || 'Expedition Completed'}</p>
+                          <p className="text-sm font-bold text-white">
+                            Quiz {act.quiz_id || 'Completed'}
+                          </p>
                           <p className="text-[10px] text-gray-500 uppercase tracking-widest">
-                            {act.created_at ? new Date(act.created_at).toLocaleDateString() : 'Recently'}
+                            Score: {act.score}% • {new Date(act.created_at).toLocaleDateString()}
                           </p>
                         </div>
                       </div>

@@ -19,6 +19,8 @@ export const Register: React.FC = () => {
     setError(null);
 
     try {
+      console.log('[Registration] Starting signup for:', email);
+      
       const { error: signUpError, data } = await supabase.auth.signUp({
         email,
         password,
@@ -29,14 +31,35 @@ export const Register: React.FC = () => {
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        console.error('[Registration Error] Supabase Auth Error:', signUpError);
+        throw signUpError;
+      }
 
-      if (data.user) {
-        // Success - navigate to dashboard (auto login usually works if email confirm is disabled)
-        navigate('/dashboard');
+      if (data?.user) {
+        console.log('[Registration Success] User created:', data.user.id);
+        
+        // If email confirmation is disabled, we can navigate immediately
+        // If not, we might need to show a 'Check your email' message
+        if (data.session) {
+          navigate('/dashboard');
+        } else {
+          // If no session, it likely means email confirmation is required
+          setError('Success! Please check your email to confirm your account.');
+          setLoading(false);
+        }
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to register');
+      console.error('[Registration Critical] Error details:', err);
+      
+      // Better user-facing error messages
+      if (err.message === 'Database error saving new user') {
+        setError('Database sync error. Please try again or contact support.');
+      } else if (err.message.includes('already registered')) {
+        setError('This email is already registered. Try signing in.');
+      } else {
+        setError(err.message || 'An unexpected error occurred during registration.');
+      }
     } finally {
       setLoading(false);
     }

@@ -56,7 +56,7 @@ export const Sidebar: React.FC = () => {
       {/* Sidebar */}
       <aside className={`fixed left-0 top-0 h-screen w-64 bg-[#0d0d0d] border-r border-white/5 flex flex-col z-40 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="p-6 flex items-center space-x-3">
-          <Shield className="w-8 h-8 text-saffron fill-saffron/20" />
+          <img src="/logo.png" alt="Swarajya Logo" className="w-10 h-10 object-contain" />
           <span className="text-xl font-black tracking-tighter text-white">SWARAJYA</span>
         </div>
 

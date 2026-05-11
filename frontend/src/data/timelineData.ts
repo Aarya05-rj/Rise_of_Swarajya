@@ -68,7 +68,7 @@ Instead of personal gain, he used this treasure to build the formidable Rajgad F
 Shivaji recognized that Javali was the gateway to the Konkan and a vital strategic asset. Through a brilliant combination of diplomacy and military action, he defeated the Mores and brought the valley under his control. This victory gave him access to a vast forest area for timber (essential for his future navy) and a defensive stronghold.
 
 In the wake of this victory, Shivaji built the legendary Pratapgad Fort on the high ridge of Javali, which would later become the site of his historic encounter with Afzal Khan.`,
-    location: 'Javali Valley',
+    location: 'Jawali Valley',
     category: 'Expansion',
     gallery: [
       "https://upload.wikimedia.org/wikipedia/commons/e/e0/Pratapgad_The_Fort_of_Valour.jpg",

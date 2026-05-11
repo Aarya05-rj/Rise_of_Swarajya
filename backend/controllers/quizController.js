@@ -417,7 +417,7 @@ const selectedAnswerIsCorrect = (answer, correct) => {
 };
 
 const updateStreak = async (userId, db = supabase) => {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('en-CA');
 
   try {
     const { data: streak } = await db
@@ -426,20 +426,17 @@ const updateStreak = async (userId, db = supabase) => {
       .eq('user_id', userId)
       .maybeSingle();
 
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    // Normalize last_active_date — Supabase DATE columns can come back as full ISO strings
-    const rawLastDate = streak?.last_active_date || null;
-    const lastDate = rawLastDate ? new Date(rawLastDate).toISOString().slice(0, 10) : null;
+    const yesterdayDate = new Date();
+    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const yesterday = yesterdayDate.toLocaleDateString('en-CA');
+    const lastDate = streak?.last_active_date ? new Date(streak.last_active_date).toLocaleDateString('en-CA') : null;
 
     let nextCount;
     if (lastDate === today) {
-      // Already active today — keep current streak
       nextCount = streak?.current_streak || 1;
     } else if (lastDate === yesterday) {
-      // Consecutive day — increment streak
       nextCount = (streak?.current_streak || 0) + 1;
     } else {
-      // Streak broken or first activity ever
       nextCount = 1;
     }
 
@@ -922,9 +919,14 @@ exports.getUserStats = async (req, res) => {
 
     // Validate current streak — if last_active_date is stale, the streak is broken
     if (streak && streak.last_active_date) {
-      const lastDate = new Date(streak.last_active_date).toISOString().slice(0, 10);
-      const today = new Date().toISOString().slice(0, 10);
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const lastDate = new Date(streak.last_active_date).toLocaleDateString('en-CA');
+      const now = new Date();
+      const today = now.toLocaleDateString('en-CA');
+      
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      const yesterday = yesterdayDate.toLocaleDateString('en-CA');
+
       if (lastDate !== today && lastDate !== yesterday) {
         // Streak is broken — reset to 0
         streak.current_streak = 0;

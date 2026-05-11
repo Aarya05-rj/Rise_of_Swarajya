@@ -63,8 +63,8 @@ export const Login: React.FC = () => {
 
           <div className="text-center mb-10">
             <div className="flex justify-center mb-4">
-              <div className="p-3 bg-saffron/10 rounded-2xl text-saffron">
-                <Shield className="w-10 h-10" />
+              <div className="p-1 bg-saffron/5 rounded-2xl overflow-hidden">
+                <img src="/logo.png" alt="Swarajya Logo" className="w-20 h-20 object-contain" />
               </div>
             </div>
             <h1 className="text-3xl font-bold mb-2">Welcome Back</h1>

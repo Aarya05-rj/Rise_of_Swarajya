@@ -234,7 +234,7 @@ export const Profile: React.FC = () => {
       console.error('Error saving avatar:', err);
       setError(err.message || 'Failed to upload image. Please ensure the "avatars" bucket exists in Supabase storage.');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 

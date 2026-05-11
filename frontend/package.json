@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "vite",
-    "dev": "vite",
+    "start": "set NODE_OPTIONS=--max-http-header-size=32768 && vite",
+    "dev": "set NODE_OPTIONS=--max-http-header-size=32768 && vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

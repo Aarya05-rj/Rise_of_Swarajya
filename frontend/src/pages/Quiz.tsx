@@ -51,6 +51,8 @@ export const Quiz: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState({ score: 0, stars: 0 });
+  const [timeLeft, setTimeLeft] = useState(15);
+  const [startTime, setStartTime] = useState<number>(0);
 
   const selectedLevelMeta = useMemo(
     () => levels.find((level) => level.level === selectedLevel) || levels[0],
@@ -79,6 +81,19 @@ export const Quiz: React.FC = () => {
     loadProgress();
   }, [loadProgress]);
 
+  // Timer Logic
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (screen === 'gameplay' && !isAnswered && timeLeft > 0) {
+      timer = setInterval(() => {
+        setTimeLeft((prev) => prev - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && !isAnswered && screen === 'gameplay') {
+      handleAnswer(-1); // Auto-fail the question on timeout
+    }
+    return () => clearInterval(timer);
+  }, [screen, isAnswered, timeLeft]);
+
   const handleSelectLevel = (level: number) => {
     setSelectedLevel(level);
     setScreen('quiz-path');
@@ -99,6 +114,8 @@ export const Quiz: React.FC = () => {
       setAnswers([]);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      setTimeLeft(15);
+      setStartTime(Date.now());
       setResult({ score: 0, stars: 0 });
       setError('');
       setScreen('gameplay');
@@ -123,11 +140,13 @@ export const Quiz: React.FC = () => {
   const finishQuiz = async () => {
     try {
       setSaving(true);
+      const timeTaken = (Date.now() - startTime) / 1000;
       const response = await submitQuiz({
         userId,
         level: selectedLevel,
         quiz: selectedQuiz,
         answers,
+        timeTaken,
       });
       const updated = response.data as QuizProgress;
       setProgress((current) => mergeProgress(current, updated));
@@ -154,6 +173,7 @@ export const Quiz: React.FC = () => {
       setCurrentQuestion((current) => current + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
+      setTimeLeft(15);
       return;
     }
     finishQuiz();
@@ -226,6 +246,11 @@ export const Quiz: React.FC = () => {
                 </button>
                 <div className="rounded-full bg-black/25 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-royal-gold">
                   Level {selectedLevel} . Quiz {selectedQuiz}
+                </div>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-bold transition-colors ${
+                  timeLeft <= 5 ? 'border-red-500 text-red-500 animate-pulse' : 'border-saffron text-saffron'
+                }`}>
+                  {timeLeft}
                 </div>
               </div>
               <QuizQuestionCard

@@ -1,23 +1,13 @@
-export interface Character {
-  id: string;
-  name: string;
-  title: string;
-  role: string;
-  description: string;
-  history: string;
-  achievements: string[];
-  image_url: string;
-  wars: string[];
-  born?: string;
-  died?: string;
-  quote?: string;
-  legacy?: string;
-  born_place?: string;
-  weapon_of_choice?: string;
-  respected_rank?: string;
-}
+const { createClient } = require('@supabase/supabase-js');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-export const legendaryCharacters: Character[] = [
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
+const legendaryCharacters = [
   {
     id: 'shivaji',
     name: 'Chhatrapati Shivaji Maharaj',
@@ -29,14 +19,13 @@ export const legendaryCharacters: Character[] = [
 He is considered one of the greatest strategists in Indian history, pioneering 'Ganimi Kava' (guerrilla tactics) which leveraged the Deccan's unique geography to defeat much larger Mughal and Bijapuri armies. Shivaji Maharaj was not just a warrior; he was a master administrator who established a professional army, a powerful navy (Father of Indian Navy), and a sophisticated council of eight ministers known as the 'Ashtapradhan Mandal'.
 
 His life was a series of legendary feats, from the killing of Afzal Khan at Pratapgad to the daring escape from Agra. He focused on 'Hindavi Swarajya'—self-rule by the people of the land. He promoted Marathi and Sanskrit over Persian in his court and was known for his religious tolerance and strict code of ethics, especially regarding the respect of women and civilians during war.`,
-    achievements: [
-      'Founded the Maratha Empire',
-      'Father of the Indian Navy',
-      'Established Ashtapradhan Mandal',
-      'Captured over 300 Forts'
-    ],
+    achievements: ['Founded the Maratha Empire', 'Father of the Indian Navy', 'Established Ashtapradhan Mandal', 'Captured over 300 Forts'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Shivaji_Maharaj.jpg',
-    wars: ['Battle of Pratapgad', 'Battle of Kolhapur', 'Battle of Pavan Khind', 'Sack of Surat', 'Battle of Sinhagad']
+    wars: ['Battle of Pratapgad', 'Battle of Kolhapur', 'Battle of Pavan Khind', 'Sack of Surat', 'Battle of Sinhagad'],
+    born: '1630',
+    died: '1680',
+    quote: 'Swarajya is the birthright of every soul born on this holy soil.',
+    legacy: 'Founded a sovereign state based on justice and religious tolerance.'
   },
   {
     id: 'sambhaji',
@@ -49,14 +38,13 @@ His life was a series of legendary feats, from the killing of Afzal Khan at Prat
 Sambhaji Maharaj was a brilliant scholar and a fierce warrior. During his nine-year reign, he fought over 120 battles and did not lose a single one—a testament to his tactical genius. He successfully defended the Maratha Empire against the full might of the Mughal Emperor Aurangzeb, who spent nearly a decade in the Deccan trying to capture him.
 
 His ultimate sacrifice at the hands of Aurangzeb, where he chose a brutal death over renouncing his religion and kingdom, ignited a fire of resistance among the Marathas that eventually led to the downfall of the Mughal Empire. He remains a symbol of extreme valor and steadfastness.`,
-    achievements: [
-      'Undefeated in 120+ Battles',
-      'Authored Budhbhushanam in Sanskrit',
-      'Defended Swarajya for 9 years',
-      'Symbol of Ultimate Sacrifice'
-    ],
+    achievements: ['Undefeated in 120+ Battles', 'Authored Budhbhushanam in Sanskrit', 'Defended Swarajya for 9 years', 'Symbol of Ultimate Sacrifice'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Sambhaji_Maharaj_Potrait.jpg',
-    wars: ['Battle of Kalyan', 'Siege of Janjira', 'Mughal-Maratha War (1680–1689)', 'Portuguese-Maratha War']
+    wars: ['Battle of Kalyan', 'Siege of Janjira', 'Mughal-Maratha War (1680–1689)', 'Portuguese-Maratha War'],
+    born: '1657',
+    died: '1689',
+    quote: 'To serve the Chhatrapati and the Swarajya is the highest honor a warrior can attain.',
+    legacy: 'Kept the Maratha resistance alive against overwhelming Mughal forces.'
   },
   {
     id: 'jijabai',
@@ -69,14 +57,13 @@ His ultimate sacrifice at the hands of Aurangzeb, where he chose a brutal death 
 She taught him the stories of the Ramayana and Mahabharata, shaping his moral compass. Jijabai was an able administrator herself, managing the Pune jagir and resolving local disputes with wisdom. Her vision was the creation of a kingdom where the local people could live with dignity and without fear of foreign oppression.
 
 She lived to see her dream fulfilled, witnessing the grand coronation of her son as Chhatrapati in 1674, passing away just days after the ceremony, her life's mission accomplished.`,
-    achievements: [
-      'Primary Mentor to Shivaji Maharaj',
-      'Administrator of Pune Jagir',
-      'Visionary of Hindavi Swarajya',
-      'Inspiration for Maratha Valor'
-    ],
+    achievements: ['Primary Mentor to Shivaji Maharaj', 'Administrator of Pune Jagir', 'Visionary of Hindavi Swarajya', 'Inspiration for Maratha Valor'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Statue_of_Shivaji_and_Jijabai_at_Shivneri.jpg',
-    wars: ['Administrative Defense of Pune', 'Strategic Guidance of early Swarajya']
+    wars: ['Administrative Defense of Pune', 'Strategic Guidance of early Swarajya'],
+    born: '1598',
+    died: '1674',
+    quote: 'A true leader is born from the values taught by a mother.',
+    legacy: 'The moral and spiritual foundation of Swarajya.'
   },
   {
     id: 'tanaji',
@@ -89,14 +76,13 @@ She lived to see her dream fulfilled, witnessing the grand coronation of her son
 Under the cover of night, Tanaji and a small group of soldiers scaled a sheer 800-foot cliff at the fort using ropes. A fierce battle ensued against the Rajput fort commander Udaybhan Rathod. Tanaji fought with incredible ferocity, even after his shield was broken, using his cloth-wrapped arm to parry blows.
 
 Though Tanaji was martyred in the battle, his soldiers captured the fort. Upon hearing of his death, Shivaji Maharaj famously remarked, "Gad aala pan Sinha gela" (The fort is won, but the Lion is gone).`,
-    achievements: [
-      'Captured Sinhagad Fort',
-      'Hero of the 1670 Campaign',
-      'Legendary scaling of Donagiri Cliff',
-      'Symbol of Ultimate Loyalty'
-    ],
+    achievements: ['Captured Sinhagad Fort', 'Hero of the 1670 Campaign', 'Legendary scaling of Donagiri Cliff', 'Symbol of Ultimate Loyalty'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Tanaji_Malusare_Statue.jpg',
-    wars: ['Battle of Sinhagad', 'Early Swarajya Campaigns']
+    wars: ['Battle of Sinhagad', 'Early Swarajya Campaigns'],
+    born: '1600s',
+    died: '1670',
+    quote: 'First the wedding of Kondhana, then my son Rayaba.',
+    legacy: 'Symbol of ultimate sacrifice and friendship.'
   },
   {
     id: 'bajiprabhu',
@@ -109,14 +95,13 @@ Though Tanaji was martyred in the battle, his soldiers captured the fort. Upon h
 Realizing they were being pursued by a massive force, Baji Prabhu took a stand at the narrow Ghodkhind pass with 600 Mavalas. He ordered Shivaji Maharaj to continue to the fort while he held the pass against 10,000 enemy soldiers. Baji Prabhu fought for hours, refusing to succumb to his numerous wounds until he heard the cannon fire from Vishalgad, signaling Shivaji's safety.
 
 His heroic stand is one of the most celebrated events in Maratha history. Shivaji renamed the pass 'Pavankhind' (The Sacred Pass) in honor of the blood shed by Baji Prabhu and his brave soldiers.`,
-    achievements: [
-      'Held Ghodkhind Pass against 10,000 soldiers',
-      'Saved Shivaji Maharaj at Panhala',
-      'Master of the Dand-Patta',
-      'Legendary Rear-guard Action'
-    ],
+    achievements: ['Held Ghodkhind Pass against 10,000 soldiers', 'Saved Shivaji Maharaj at Panhala', 'Master of the Dand-Patta', 'Legendary Rear-guard Action'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/6/60/Baji_Prabhu_Deshpande_Statue.jpg',
-    wars: ['Battle of Pavankhind', 'Siege of Panhala']
+    wars: ['Battle of Pavankhind', 'Siege of Panhala'],
+    born: '1600s',
+    died: '1660',
+    quote: 'I will not die until I hear the cannon fire from Vishalgad.',
+    legacy: 'A benchmark of bravery and rear-guard tactics.'
   },
   {
     id: 'bahirji',
@@ -129,14 +114,13 @@ His heroic stand is one of the most celebrated events in Maratha history. Shivaj
 Bahirji's intelligence was critical to almost every major Maratha success. He provided the detailed map of the Mughal camp for the attack on Shaista Khan and gathered vital information for the two successful sacks of Surat. He was also instrumental in the planning of the Battle of Pratapgad, providing exact details of Afzal Khan's movements.
 
 His network of spies was so efficient that Shivaji Maharaj was often aware of enemy plans even before they were fully formulated. Bahirji remains one of the most mysterious and crucial figures in the formation of the Maratha Empire.`,
-    achievements: [
-      'Headed India\'s first professional Intelligence Dept',
-      'Master of 100+ Disguises',
-      'Planned the Raid on Shaista Khan',
-      'Vital Intelligence for Sacks of Surat'
-    ],
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/User_icon_2.svg/1200px-User_icon_2.svg.png',
-    wars: ['Raid on Shaista Khan', 'Sack of Surat', 'Battle of Pratapgad', 'Invasion of Karnataka']
+    achievements: ['Headed India\'s first professional Intelligence Dept', 'Master of 100+ Disguises', 'Planned the Raid on Shaista Khan', 'Vital Intelligence for Sacks of Surat'],
+    image_url: 'https://i.pinimg.com/736x/88/06/1d/88061d4a8f9485c2921571d43a7589d3.jpg',
+    wars: ['Raid on Shaista Khan', 'Sack of Surat', 'Battle of Pratapgad', 'Invasion of Karnataka'],
+    born: '1600s',
+    died: '1600s',
+    quote: 'Intelligence is the invisible shield of the kingdom.',
+    legacy: 'Created one of the most effective spy networks in history.'
   },
   {
     id: 'kanhoji',
@@ -149,14 +133,13 @@ His network of spies was so efficient that Shivaji Maharaj was often aware of en
 Kanhoji successfully challenged the naval might of the British, Portuguese, and Dutch. He refused to pay taxes to the colonial powers and instead levied his own 'Chauth' on foreign ships entering Maratha waters. He was never defeated in battle by any European navy, and his defensive tactics and use of light, maneuverable ships (Gurabs and Galbats) were revolutionary.
 
 He turned the Maratha Navy into a formidable force that protected the Indian coastline from foreign invasion for decades. He is rightfully remembered as one of the pioneers of naval warfare in India.`,
-    achievements: [
-      'Undefeated against British and Portuguese Navies',
-      'Established Naval Bases at Vijaydurg and Khanderi',
-      'Controlled the entire Konkan Coast',
-      'Pioneer of Coastal Defense'
-    ],
+    achievements: ['Undefeated against British and Portuguese Navies', 'Established Naval Bases at Vijaydurg and Khanderi', 'Controlled the entire Konkan Coast', 'Pioneer of Coastal Defense'],
     image_url: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/Kanhoji_Angre.jpg',
-    wars: ['Battle of Khanderi', 'Siege of Vijaydurg', 'Naval Campaigns against Siddis']
+    wars: ['Battle of Khanderi', 'Siege of Vijaydurg', 'Naval Campaigns against Siddis'],
+    born: '1669',
+    died: '1729',
+    quote: 'The sea belongs to those who have the courage to guard it.',
+    legacy: 'Established Maratha naval supremacy on the west coast.'
   },
   {
     id: 'hambirrao',
@@ -169,13 +152,74 @@ He turned the Maratha Navy into a formidable force that protected the Indian coa
 Hambirrao played a key role in the Battle of Nesari, where he took over command after the death of Prataprao Gujar and turned a potential defeat into a stunning victory. Under Sambhaji Maharaj, he led several successful campaigns into the heart of the Mughal Empire, including the famous raid on Burhanpur.
 
 He died a hero's death in the Battle of Wai in 1687, fighting against a massive Mughal force led by Sarja Khan. His leadership ensured the survival of the Maratha state during its most turbulent years.`,
-    achievements: [
-      'Commander-in-Chief of the Maratha Army',
-      'Winner of the Battle of Nesari',
-      'Successful Raid on Burhanpur',
-      'Legendary Cavalry Strategist'
-    ],
-    image_url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/User_icon_2.svg/1200px-User_icon_2.svg.png',
-    wars: ['Battle of Nesari', 'Battle of Wai', 'Raid on Burhanpur', 'Karnataka Campaign']
+    achievements: ['Commander-in-Chief of the Maratha Army', 'Winner of the Battle of Nesari', 'Successful Raid on Burhanpur', 'Legendary Cavalry Strategist'],
+    image_url: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-vK1V-v0W-y-o3g-f-X-v0W-y-o3g-f-X-w&s',
+    wars: ['Battle of Nesari', 'Battle of Wai', 'Raid on Burhanpur', 'Karnataka Campaign'],
+    born: '1630s',
+    died: '1687',
+    quote: 'A general\'s duty is to lead from the front, even into the jaws of death.',
+    legacy: 'Unified the Maratha army during a critical transition period.'
   }
 ];
+
+// NOTE: We EXCLUDE 'id' because the DB uses a SERIAL integer ID.
+const VALID_COLUMNS = [
+  'name', 'title', 'role', 'born', 'died', 'description', 'history', 'quote', 'legacy', 'image_url', 'achievements', 'wars'
+];
+
+async function sync() {
+  console.log('Fetching existing characters from Supabase...');
+  const { data: dbData, error: dbError } = await supabase
+    .from('characters')
+    .select('id, name');
+
+  if (dbError) {
+    console.error('Error fetching characters:', dbError.message);
+    return;
+  }
+
+  const existingNames = new Set(dbData.map(c => c.name.toLowerCase()));
+
+  const missingCharacters = legendaryCharacters.filter(c => 
+    !existingNames.has(c.name.toLowerCase())
+  );
+
+  if (missingCharacters.length === 0) {
+    console.log('All characters are already present in Supabase. No action needed.');
+    return;
+  }
+
+  console.log(`Found ${missingCharacters.length} missing characters: ${missingCharacters.map(c => c.name).join(', ')}`);
+
+  const inserted = [];
+  for (const char of missingCharacters) {
+    console.log(`Inserting ${char.name}...`);
+    
+    // Filter out columns that don't exist in the current schema
+    const filteredChar = {};
+    for (const key of VALID_COLUMNS) {
+      if (char[key] !== undefined) {
+        filteredChar[key] = char[key];
+      }
+    }
+
+    const { error } = await supabase
+      .from('characters')
+      .insert(filteredChar);
+
+    if (error) {
+      console.error(`Error inserting ${char.name}:`, error.message);
+    } else {
+      inserted.push(char.name);
+    }
+  }
+
+  console.log('--- SYNC RESULTS ---');
+  if (inserted.length > 0) {
+    console.log('Successfully inserted:', inserted.join(', '));
+  } else {
+    console.log('No characters were inserted due to errors.');
+  }
+}
+
+sync();
