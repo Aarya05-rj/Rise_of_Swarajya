@@ -49,7 +49,7 @@ const formatDate = (value?: string) => {
 
 const getSafeAvatarUrl = (value?: string) => {
   if (!value) return '';
-  return value.includes('/storage/v1/object/avatars/') ? '' : value;
+  return value;
 };
 
 const createAvatarDataUrl = (file: File): Promise<string> =>
@@ -150,6 +150,7 @@ export const Profile: React.FC = () => {
       // Smart mapping for flexible column names, prioritizing backend data
       const mappedData = {
         ...data,
+        avatar_url: user?.user_metadata?.avatar_url || data.avatar_url || '',
         total_score: freshStats.totalXp ?? data.total_score ?? data.score ?? 0,
         progress: Math.min(((freshStats.totalAttempts || 0) / 90) * 100, 100),
         rank: data.rank || getRank(freshStats.totalXp || 0) || 'Soldier',
@@ -157,6 +158,10 @@ export const Profile: React.FC = () => {
       };
       
       setProfileData(mappedData);
+      setUserStats((prev: any) => ({
+        ...freshStats,
+        currentStreak: mappedData.streak
+      }));
     } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
@@ -367,7 +372,7 @@ export const Profile: React.FC = () => {
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Learning Streak</h3>
                   <div className="flex flex-col">
                     <div className="flex items-end space-x-2">
-                      <span className="text-5xl font-black text-white">{userStats.currentStreak}</span>
+                      <span className="text-5xl font-black text-white">{profileData?.streak || 0}</span>
                       <span className="text-saffron font-bold mb-2">DAYS</span>
                     </div>
                     {userStats.lastActiveDate && (
