@@ -35,10 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
-
   const refreshUser = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     setSession(session);

@@ -686,8 +686,8 @@ exports.submitQuiz = async (req, res) => {
       return total + (isCorrect ? 1 : 0);
     }, 0);
 
-    const totalQuestions = 10; 
-    const score = correctCount * 10; // Strictly 10 marks per correct answer
+    const totalQuestions = 10; // Forced to 10 as per user requirement
+    const score = Math.round((correctCount / totalQuestions) * 100);
     console.log(`[Submit] Final: Correct=${correctCount}/${totalQuestions} Score=${score}`);
     
     const stars = getStars(score);
