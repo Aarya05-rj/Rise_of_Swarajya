@@ -9,7 +9,10 @@ import {
   HelpCircle,
   Shield,
   Activity,
-  Loader2
+  Loader2,
+  Flame,
+  Zap,
+  Trophy
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -31,6 +34,14 @@ const readJson = async (response: Response) => {
   }
 };
 
+const getCompletedQuizzes = () => {
+  try {
+    return JSON.parse(localStorage.getItem("completedQuizzes") || "{}");
+  } catch {
+    return {};
+  }
+};
+
 export const Dashboard: React.FC = () => {
   const { user, session } = useAuth();
   const [userData, setUserData] = useState<any>(null);
@@ -38,8 +49,24 @@ export const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [overallProgress, setOverallProgress] = useState(0);
 
+  // Stats from localStorage for instant update
+  const currentStreak = Number(localStorage.getItem("quizStreak")) || 0;
+  const completedCount = Object.keys(getCompletedQuizzes()).length;
+
   useEffect(() => {
     if (user) {
+      // Check if streak should reset
+      const lastQuizDate = localStorage.getItem("lastQuizDate");
+      if (lastQuizDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastDate = new Date(lastQuizDate);
+        lastDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) {
+          localStorage.setItem("quizStreak", "0");
+        }
+      }
       fetchDashboardData();
     }
   }, [user]);
@@ -72,24 +99,24 @@ export const Dashboard: React.FC = () => {
           const levels = progressPayload.levels || [];
           const progressRows = Array.isArray(progressPayload.data) ? progressPayload.data : [];
 
-          // Count completed quizzes from the levels breakdown
-          let completedQuizzes = 0;
-          let totalQuizzes = 0;
+          // Count completed quizzes
+          let completedQuizzes = completedCount;
+          let totalQuizzes = 90; // 10 levels x 9 quizzes
 
           if (levels.length > 0) {
+            let apiCompleted = 0;
             levels.forEach((level: any) => {
-              completedQuizzes += level.completedQuizzes || 0;
-              totalQuizzes += level.totalQuizzes || 9;
+              apiCompleted += level.completedQuizzes || 0;
             });
-          } else {
-            // Fallback: count from raw progress rows
-            totalQuizzes = 10 * 9; // 10 levels x 9 quizzes
-            completedQuizzes = progressRows.filter(
+            completedQuizzes = Math.max(completedQuizzes, apiCompleted);
+          } else if (progressRows.length > 0) {
+            const apiCompleted = progressRows.filter(
               (row: any) => row.completed && (row.best_score ?? row.score ?? 0) >= 70
             ).length;
+            completedQuizzes = Math.max(completedQuizzes, apiCompleted);
           }
 
-          const pct = totalQuizzes > 0 ? Math.round((completedQuizzes / totalQuizzes) * 100) : 0;
+          const pct = Math.round((completedQuizzes / totalQuizzes) * 100);
           setOverallProgress(pct);
         }
       } catch (progressErr) {
@@ -123,16 +150,31 @@ export const Dashboard: React.FC = () => {
       <Sidebar />
       
       <main className="flex-1 lg:ml-64 p-4 md:p-8 pt-20 lg:pt-8">
-        <header className="mb-12 flex justify-between items-end">
+        <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
               SAYADRI'S PRIDE, <span className="text-saffron uppercase">{user?.user_metadata?.full_name?.split(' ')[0] || 'WARRIOR'}</span>
             </h1>
             <p className="text-gray-500 font-light italic">"Freedom is the fruit of bravery."</p>
           </div>
-          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-saffron bg-saffron/5 px-4 py-2 rounded-full border border-saffron/20">
-            <span className="w-2 h-2 bg-saffron rounded-full animate-pulse"></span>
-            {userData?.rank || 'Live Campaign'} - {userData?.total_score || 0} XP
+          
+          {/* Stats Badges */}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-4 py-3 min-w-[80px]">
+              <Flame className="h-4 w-4 text-saffron mb-1" />
+              <span className="text-lg font-black text-white">{currentStreak}</span>
+              <p className="text-[8px] font-black uppercase tracking-widest text-gray-600">Streak</p>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-4 py-3 min-w-[80px]">
+              <Zap className="h-4 w-4 text-saffron mb-1" />
+              <span className="text-lg font-black text-white">{userData?.total_score || 0}</span>
+              <p className="text-[8px] font-black uppercase tracking-widest text-gray-600">XP</p>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-4 py-3 min-w-[80px]">
+              <Trophy className="h-4 w-4 text-saffron mb-1" />
+              <span className="text-lg font-black text-white">{completedCount}</span>
+              <p className="text-[8px] font-black uppercase tracking-widest text-gray-600">Cleared</p>
+            </div>
           </div>
         </header>
 
@@ -157,8 +199,7 @@ export const Dashboard: React.FC = () => {
                 Never Bend Your Head Always Hold It High </p>
                 <div className="h-px w-24 bg-saffron/50 mb-6"></div>
                 <p className="text-lg md:text-xl font-black text-saffron uppercase tracking-[0.2em]" >
-               THE FEARLESS EMPEROR   </p>
-                 
+                THE FEARLESS EMPEROR   </p>
               </div>
             </motion.div>
 

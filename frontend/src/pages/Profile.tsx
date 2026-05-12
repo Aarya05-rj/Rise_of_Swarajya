@@ -49,7 +49,7 @@ const formatDate = (value?: string) => {
 
 const getSafeAvatarUrl = (value?: string) => {
   if (!value) return '';
-  return value;
+  return value.includes('/storage/v1/object/avatars/') ? '' : value;
 };
 
 const createAvatarDataUrl = (file: File): Promise<string> =>
@@ -87,7 +87,7 @@ const createAvatarDataUrl = (file: File): Promise<string> =>
   });
 
 export const Profile: React.FC = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState('');
   const [profileData, setProfileData] = useState<any>(null);
@@ -150,7 +150,6 @@ export const Profile: React.FC = () => {
       // Smart mapping for flexible column names, prioritizing backend data
       const mappedData = {
         ...data,
-        avatar_url: user?.user_metadata?.avatar_url || data.avatar_url || '',
         total_score: freshStats.totalXp ?? data.total_score ?? data.score ?? 0,
         progress: Math.min(((freshStats.totalAttempts || 0) / 90) * 100, 100),
         rank: data.rank || getRank(freshStats.totalXp || 0) || 'Soldier',
@@ -158,10 +157,6 @@ export const Profile: React.FC = () => {
       };
       
       setProfileData(mappedData);
-      setUserStats((prev: any) => ({
-        ...freshStats,
-        currentStreak: mappedData.streak
-      }));
     } catch (err) {
       console.error('Error fetching profile:', err);
     } finally {
@@ -186,6 +181,7 @@ export const Profile: React.FC = () => {
       });
 
       setProfileData({ ...profileData, full_name: name });
+      await refreshUser();
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -254,6 +250,7 @@ export const Profile: React.FC = () => {
       }
 
       setProfileData((current: any) => ({ ...current, avatar_url: publicUrl }));
+      await refreshUser();
       alert('Profile photo updated successfully!');
     } catch (err) {
       console.error('Avatar upload error:', err);
@@ -372,7 +369,7 @@ export const Profile: React.FC = () => {
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Learning Streak</h3>
                   <div className="flex flex-col">
                     <div className="flex items-end space-x-2">
-                      <span className="text-5xl font-black text-white">{profileData?.streak || 0}</span>
+                      <span className="text-5xl font-black text-white">{profileData?.streak || userStats.currentStreak}</span>
                       <span className="text-saffron font-bold mb-2">DAYS</span>
                     </div>
                     {userStats.lastActiveDate && (
@@ -385,7 +382,7 @@ export const Profile: React.FC = () => {
                 <div className="bg-[#111] border border-white/5 p-8 rounded-3xl">
                   <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Total Knowledge Units</h3>
                   <div className="flex items-end space-x-2">
-                    <span className="text-5xl font-black text-white">{userStats.totalXp}</span>
+                    <span className="text-5xl font-black text-white">{profileData?.total_score || userStats.totalXp}</span>
                     <span className="text-saffron font-bold mb-2">XP</span>
                   </div>
                 </div>

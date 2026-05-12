@@ -82,17 +82,9 @@ export const Sidebar: React.FC = () => {
 
         <div className="p-4 border-t border-white/5">
           <div className="bg-[#151515] p-4 rounded-2xl mb-4 flex items-center space-x-3">
-            {user?.user_metadata?.avatar_url ? (
-              <img 
-                src={user.user_metadata.avatar_url} 
-                alt="Avatar" 
-                className="w-10 h-10 rounded-full object-cover" 
-              />
-            ) : (
-              <div className="w-10 h-10 bg-saffron/20 rounded-full flex items-center justify-center text-saffron font-bold">
-                {user?.email?.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className="w-10 h-10 bg-saffron/20 rounded-full flex items-center justify-center text-saffron font-bold">
+              {user?.email?.charAt(0).toUpperCase()}
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{user?.user_metadata?.full_name || 'Warrior'}</p>
               <p className="text-xs text-gray-500 truncate">{user?.email}</p>
