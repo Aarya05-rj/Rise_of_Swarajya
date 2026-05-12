@@ -12,8 +12,10 @@ export interface QuizProgress {
   level: number;
   quiz: number;
   score: number;
+  best_score: number;
   stars: number;
   completed: boolean;
+  attempts: number;
   updated_at?: string;
 }
 

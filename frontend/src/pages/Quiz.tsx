@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+// Quiz page for level and quiz selection and gameplay
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { Sidebar } from '../components/Sidebar';
 import { QuizLevelMap } from '../components/quiz/QuizLevelMap';
 import { QuizPath } from '../components/quiz/QuizPath';
 import { QuizQuestionCard } from '../components/quiz/QuizQuestionCard';
 import { QuizResult } from '../components/quiz/QuizResult';
 import type { LevelMeta, QuizProgress, QuizQuestion } from '../components/quiz/types';
-import { getQuizProgress, getQuizQuestions, submitQuiz } from '../services/api';
+import { getQuizProgress, getQuizQuestions, submitQuiz, getUserStats } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 type QuizScreen = 'level-select' | 'quiz-path' | 'gameplay' | 'result';
@@ -50,7 +51,14 @@ export const Quiz: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [result, setResult] = useState({ score: 0, stars: 0 });
+  const [result, setResult] = useState({ 
+    score: 0, 
+    stars: 0, 
+    correctCount: 0, 
+    totalQuestions: 10,
+    bestScore: 0,
+    xpEarned: 0
+  });
   const [timeLeft, setTimeLeft] = useState(15);
   const [startTime, setStartTime] = useState<number>(0);
 
@@ -59,11 +67,20 @@ export const Quiz: React.FC = () => {
     [selectedLevel]
   );
 
+  const [userStats, setUserStats] = useState<any>(null);
+
   const loadProgress = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getQuizProgress(userId);
-      setProgress(response.data || []);
+      const [progressResponse, statsResponse] = await Promise.all([
+        getQuizProgress(userId),
+        getUserStats(userId)
+      ]);
+      
+      setProgress(progressResponse.data || []);
+      if (statsResponse.success) {
+        setUserStats(statsResponse.data);
+      }
       setError('');
     } catch (err: any) {
       if (isMissingQuizProgressTable(err.message)) {
@@ -78,12 +95,24 @@ export const Quiz: React.FC = () => {
   }, [userId]);
 
   useEffect(() => {
+    // Check if streak should reset before loading stats
+    const lastQuizDate = localStorage.getItem("lastQuizDate");
+    if (lastQuizDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const lastDate = new Date(lastQuizDate);
+      lastDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays > 1) {
+        localStorage.setItem("quizStreak", "0");
+      }
+    }
     loadProgress();
   }, [loadProgress]);
 
   // Timer Logic
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: any;
     if (screen === 'gameplay' && !isAnswered && timeLeft > 0) {
       timer = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
@@ -102,21 +131,38 @@ export const Quiz: React.FC = () => {
   const startQuiz = async (quiz: number) => {
     try {
       setLoading(true);
+      // PERMANENT FIX: Reset all states before starting
+      setCurrentQuestion(0);
+      setAnswers([]);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setTimeLeft(15);
+      setResult({ score: 0, stars: 0, correctCount: 0, totalQuestions: 10, bestScore: 0, xpEarned: 0 });
+
       const response = await getQuizQuestions(selectedLevel, quiz);
       const nextQuestions = response.data || [];
       if (!nextQuestions.length) {
         setError('This quiz is not seeded yet. Level 1 quizzes are ready to play.');
         return;
       }
+      // Jumble options for each question
+      const jumbledQuestions = nextQuestions.map((q: QuizQuestion) => {
+        const options = [...q.options];
+        const correctText = options[q.correctAnswer];
+        
+        // Fisher-Yates shuffle
+        for (let i = options.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [options[i], options[j]] = [options[j], options[i]];
+        }
+        
+        const newCorrectIndex = options.indexOf(correctText);
+        return { ...q, options, correctAnswer: newCorrectIndex };
+      });
+
       setSelectedQuiz(quiz);
-      setQuestions(nextQuestions);
-      setCurrentQuestion(0);
-      setAnswers([]);
-      setSelectedAnswer(null);
-      setIsAnswered(false);
-      setTimeLeft(15);
+      setQuestions(jumbledQuestions);
       setStartTime(Date.now());
-      setResult({ score: 0, stars: 0 });
       setError('');
       setScreen('gameplay');
     } catch (err: any) {
@@ -129,38 +175,128 @@ export const Quiz: React.FC = () => {
   const handleAnswer = (answer: number) => {
     if (isAnswered) return;
     const question = questions[currentQuestion];
+    
     setSelectedAnswer(answer);
     setIsAnswered(true);
+
+    // Save answer to the array. We calculate the score at the end from this array.
     setAnswers((current) => [
       ...current.filter((item) => item.questionId !== question.id),
-      { questionId: question.id, selectedAnswer: answer, selectedAnswerText: question.options[answer] },
+      { 
+        questionId: question.id, 
+        selectedAnswer: answer, 
+        selectedAnswerText: answer >= 0 ? question.options[answer] : null 
+      },
     ]);
   };
 
   const finishQuiz = async () => {
     try {
       setSaving(true);
+      
+      // PERMANENT FIX: Calculate derived values from the answers array
+      const correctAnswers = answers.filter((ans) => {
+        const question = questions.find(q => q.id === ans.questionId);
+        return question && ans.selectedAnswer === question.correctAnswer;
+      }).length;
+
+      const finalScore = correctAnswers * 10;
+      let finalStars = 0;
+      if (finalScore >= 90) finalStars = 3;
+      else if (finalScore >= 60) finalStars = 2;
+      else if (finalScore >= 30) finalStars = 1;
+
       const timeTaken = (Date.now() - startTime) / 1000;
+      
       const response = await submitQuiz({
         userId,
         level: selectedLevel,
         quiz: selectedQuiz,
-        answers,
+        answers, // Send exact answers array to backend
         timeTaken,
       });
+
       const updated = response.data as QuizProgress;
       setProgress((current) => mergeProgress(current, updated));
-      setResult({ score: updated.score, stars: updated.stars });
+      
+      // Use the derived values for the result screen to ensure 100% accuracy
+      setResult({ 
+        score: finalScore, 
+        stars: finalStars,
+        correctCount: correctAnswers,
+        totalQuestions: 10,
+        bestScore: response.bestScore || finalScore,
+        xpEarned: finalScore
+      });
+
+      // Update local storage best score for this specific quiz
+      localStorage.setItem(`bestScore_L${selectedLevel}_Q${selectedQuiz}`, String(response.bestScore || finalScore));
+
+      // PERMANENT STREAK FIX
+      if (finalScore >= 70) {
+        const today = new Date().toDateString();
+        const lastQuizDate = localStorage.getItem("lastQuizDate");
+        let currentStreak = Number(localStorage.getItem("quizStreak")) || 0;
+
+        if (today !== lastQuizDate) {
+          if (!lastQuizDate) {
+            currentStreak = 1;
+          } else {
+            const lastDate = new Date(lastQuizDate);
+            const currentDate = new Date(today);
+            const diffTime = currentDate.getTime() - lastDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+              currentStreak += 1;
+            } else if (diffDays > 1) {
+              currentStreak = 1;
+            } else if (diffDays === 0) {
+              // Same day case (redundant but safe)
+            }
+          }
+          localStorage.setItem("quizStreak", String(currentStreak));
+          localStorage.setItem("lastQuizDate", today);
+        }
+      }
+
+      // PERMANENT PROGRESS FIX
+      if (finalScore >= 70) {
+        const completed = JSON.parse(localStorage.getItem("completedQuizzes") || "{}");
+        completed[`level${selectedLevel}_quiz${selectedQuiz}`] = true;
+        localStorage.setItem("completedQuizzes", JSON.stringify(completed));
+      }
+
       setError('');
       setScreen('result');
     } catch (err: any) {
-      const correctAnswers = questions.reduce((total, question) => {
-        const answer = answers.find((item) => item.questionId === question.id);
-        return total + (answer?.selectedAnswer === question.correctAnswer ? 1 : 0);
-      }, 0);
-      const score = correctAnswers * 10;
-      const stars = score >= 90 ? 3 : score >= 70 ? 2 : score >= 50 ? 1 : 0;
-      setResult({ score, stars });
+      // Fallback calculation in case of API error
+      const correctAnswers = answers.filter((ans) => {
+        const question = questions.find(q => q.id === ans.questionId);
+        return question && ans.selectedAnswer === question.correctAnswer;
+      }).length;
+      const finalScore = correctAnswers * 10;
+      let finalStars = 0;
+      if (finalScore >= 90) finalStars = 3;
+      else if (finalScore >= 60) finalStars = 2;
+      else if (finalScore >= 30) finalStars = 1;
+
+      setResult({ 
+        score: finalScore, 
+        stars: finalStars, 
+        correctCount: correctAnswers, 
+        totalQuestions: 10,
+        bestScore: finalScore,
+        xpEarned: finalScore
+      });
+
+      // PERMANENT PROGRESS FIX (Fallback)
+      if (finalScore >= 70) {
+        const completed = JSON.parse(localStorage.getItem("completedQuizzes") || "{}");
+        completed[`level${selectedLevel}_quiz${selectedQuiz}`] = true;
+        localStorage.setItem("completedQuizzes", JSON.stringify(completed));
+      }
+
       setError(err.message || 'Progress could not be saved. Your result is shown locally.');
       setScreen('result');
     } finally {
@@ -213,7 +349,7 @@ export const Quiz: React.FC = () => {
         <AnimatePresence mode="wait">
           {screen === 'level-select' && (
             <motion.div key="levels" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <QuizLevelMap levels={levels} progress={progress} onSelectLevel={handleSelectLevel} />
+              <QuizLevelMap levels={levels} progress={progress} userStats={userStats} onSelectLevel={handleSelectLevel} />
             </motion.div>
           )}
 
@@ -229,30 +365,7 @@ export const Quiz: React.FC = () => {
           )}
 
           {screen === 'gameplay' && questions[currentQuestion] && (
-            <motion.div
-              key="gameplay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,153,51,0.16),transparent_30%),linear-gradient(180deg,#1A1A1A,#3D2817)] px-4 py-8 text-cream"
-            >
-              <div className="mx-auto mb-8 flex max-w-3xl items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() => setScreen('quiz-path')}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-cream/80 transition hover:border-saffron/50 hover:text-saffron"
-                >
-                  <ArrowLeft className="h-4 w-4" /> Path
-                </button>
-                <div className="rounded-full bg-black/25 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-royal-gold">
-                  Level {selectedLevel} . Quiz {selectedQuiz}
-                </div>
-                <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 font-bold transition-colors ${
-                  timeLeft <= 5 ? 'border-red-500 text-red-500 animate-pulse' : 'border-saffron text-saffron'
-                }`}>
-                  {timeLeft}
-                </div>
-              </div>
+            <motion.div key="gameplay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <QuizQuestionCard
                 question={questions[currentQuestion]}
                 index={currentQuestion}
@@ -261,6 +374,10 @@ export const Quiz: React.FC = () => {
                 isAnswered={isAnswered}
                 onAnswer={handleAnswer}
                 onNext={goNext}
+                onBack={() => setScreen('quiz-path')}
+                timeLeft={timeLeft}
+                levelNumber={selectedLevel}
+                quizNumber={selectedQuiz}
               />
             </motion.div>
           )}
@@ -275,7 +392,10 @@ export const Quiz: React.FC = () => {
             >
               <QuizResult
                 score={result.score}
-                total={100}
+                correctCount={result.correctCount}
+                totalQuestions={result.totalQuestions}
+                bestScore={result.bestScore}
+                xpEarned={result.xpEarned}
                 stars={result.stars}
                 canGoNext={result.stars > 0 && selectedQuiz < quizCount}
                 onBack={() => setScreen('quiz-path')}

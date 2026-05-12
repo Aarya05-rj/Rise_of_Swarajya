@@ -88,8 +88,8 @@ const getFallbackQuestions = (level, quiz) => {
 
 const getStars = (score) => {
   if (score >= 90) return 3;
-  if (score >= 70) return 2;
-  if (score >= 50) return 1;
+  if (score >= 60) return 2;
+  if (score >= 30) return 1;
   return 0;
 };
 
@@ -107,20 +107,30 @@ const syncProfileQuizScore = async (userId, progressRows, db = supabase) => {
       return sum + bestScore + (item.stars || 0) * 25;
     }, 0);
 
-    const { data: profile, error: profileError } = await db
-      .from('profiles')
+    // Try 'users' first as it's our new standard
+    let { data: profile, error: profileError } = await db
+      .from('users')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
+    let tableName = 'users';
+
+    if (profileError || !profile) {
+      // Fallback to 'profiles'
+      ({ data: profile, error: profileError } = await db
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle());
+      tableName = 'profiles';
+    }
+
     if (profileError || !profile) return null;
 
     const updatePayload = {};
-    if (Object.prototype.hasOwnProperty.call(profile, 'total_score')) {
-      updatePayload.total_score = totalScore;
-    } else if (Object.prototype.hasOwnProperty.call(profile, 'score')) {
-      updatePayload.score = totalScore;
-    }
+    const scoreColumn = Object.prototype.hasOwnProperty.call(profile, 'total_score') ? 'total_score' : 'score';
+    updatePayload[scoreColumn] = totalScore;
 
     if (Object.prototype.hasOwnProperty.call(profile, 'rank')) {
       updatePayload.rank = rankForScore(totalScore);
@@ -129,23 +139,23 @@ const syncProfileQuizScore = async (userId, progressRows, db = supabase) => {
       updatePayload.progress = Math.min(Math.round((progressRows.filter((item) => item.completed).length / (LEVEL_COUNT * QUIZZES_PER_LEVEL)) * 100), 100);
     }
 
-    if (!Object.keys(updatePayload).length) return profile;
+    updatePayload.updated_at = new Date().toISOString();
 
     const { data, error } = await db
-      .from('profiles')
+      .from(tableName)
       .update(updatePayload)
       .eq('id', userId)
       .select('*')
       .maybeSingle();
 
     if (error) {
-      console.warn('[Profile Quiz Score Warning]', error.message);
+      console.warn(`[Profile Quiz Score Warning] Failed to update ${tableName}:`, error.message);
       return null;
     }
 
     return data;
   } catch (error) {
-    console.warn('[Profile Quiz Score Warning]', error.message);
+    console.warn('[Profile Quiz Score Warning] Critical Error:', error.message);
     return null;
   }
 };
@@ -409,15 +419,20 @@ const normalizeAnswerRows = (answers, correctById) =>
 
 const selectedAnswerIsCorrect = (answer, correct) => {
   if (!correct) return false;
-  if (answer.selectedAnswer === correct.index) return true;
-  if (typeof answer.selectedAnswerText === 'string') {
-    return answer.selectedAnswerText === correct.value;
+  
+  // Cast both to Number for reliable comparison of numeric indexes
+  const selected = Number(answer.selectedAnswer);
+  const target = Number(correct.index);
+  if (!isNaN(selected) && !isNaN(target) && selected === target) return true;
+
+  if (typeof answer.selectedAnswerText === 'string' && typeof correct.value === 'string') {
+    return answer.selectedAnswerText.trim().toLowerCase() === correct.value.trim().toLowerCase();
   }
   return false;
 };
 
 const updateStreak = async (userId, db = supabase) => {
-  const today = new Date().toLocaleDateString('en-CA');
+  const today = new Date().toISOString().split('T')[0];
 
   try {
     const { data: streak } = await db
@@ -428,8 +443,8 @@ const updateStreak = async (userId, db = supabase) => {
 
     const yesterdayDate = new Date();
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-    const yesterday = yesterdayDate.toLocaleDateString('en-CA');
-    const lastDate = streak?.last_active_date ? new Date(streak.last_active_date).toLocaleDateString('en-CA') : null;
+    const yesterday = yesterdayDate.toISOString().split('T')[0];
+    const lastDate = streak?.last_active_date ? new Date(streak.last_active_date).toISOString().split('T')[0] : null;
 
     let nextCount;
     if (lastDate === today) {
@@ -631,9 +646,9 @@ exports.submitQuiz = async (req, res) => {
       return res.status(400).json({ success: false, error: 'userId, quizId, and answers are required' });
     }
 
-    const questionIds = answers.map((answer) => answer.questionId).filter(Number.isInteger);
+    const questionIds = answers.map((answer) => Number(answer.questionId)).filter(id => !isNaN(id));
     if (!questionIds.length) {
-      return res.status(400).json({ success: false, error: 'At least one answer is required' });
+      return res.status(400).json({ success: false, error: 'At least one valid answer is required' });
     }
 
     const { data: questions, error: questionsError } = await db
@@ -646,27 +661,35 @@ exports.submitQuiz = async (req, res) => {
     if (questionsError) throw questionsError;
 
     const fallbackQuestions = getFallbackQuestions(level, quiz);
-    const correctById = new Map([
-      ...fallbackQuestions.map((question) => [
-        question.id,
-        {
-          index: question.correct_answer,
-          value: question.options?.[question.correct_answer],
-        },
-      ]),
-      ...(questions || []).map((question) => [
-        question.id,
-        {
-          index: question.correct_answer,
-          value: question.options?.[question.correct_answer],
-        },
-      ]),
-    ]);
+    const correctById = new Map();
+    
+    // Fill map with fallback values first
+    fallbackQuestions.forEach(q => {
+      correctById.set(Number(q.id), {
+        index: q.correct_answer,
+        value: q.options?.[q.correct_answer],
+      });
+    });
+
+    // Override with database values
+    (questions || []).forEach(q => {
+      correctById.set(Number(q.id), {
+        index: q.correct_answer,
+        value: q.options?.[q.correct_answer],
+      });
+    });
+
     const correctCount = answers.reduce((total, answer) => {
-      return total + (selectedAnswerIsCorrect(answer, correctById.get(answer.questionId)) ? 1 : 0);
+      const qId = Number(answer.questionId);
+      const isCorrect = selectedAnswerIsCorrect(answer, correctById.get(qId));
+      console.log(`[Submit] Question ${qId}: Selected=${answer.selectedAnswer} (${answer.selectedAnswerText}) Correct=${isCorrect}`);
+      return total + (isCorrect ? 1 : 0);
     }, 0);
-    const totalQuestions = Math.max(questionIds.length, 1);
+
+    const totalQuestions = 10; // Forced to 10 as per user requirement
     const score = Math.round((correctCount / totalQuestions) * 100);
+    console.log(`[Submit] Final: Correct=${correctCount}/${totalQuestions} Score=${score}`);
+    
     const stars = getStars(score);
     const completed = score >= PASSING_SCORE;
 
@@ -784,9 +807,11 @@ exports.submitQuiz = async (req, res) => {
       success: true,
       data: savedProgress,
       score,
+      correctCount,
+      totalQuestions,
       bestScore,
       stars,
-      xp: correctCount * 10,
+      xp: (correctCount || 0) * 10,
       passed: completed,
       attempt: attempt || null,
       streak,
@@ -919,16 +944,16 @@ exports.getUserStats = async (req, res) => {
 
     // Validate current streak — if last_active_date is stale, the streak is broken
     if (streak && streak.last_active_date) {
-      const lastDate = new Date(streak.last_active_date).toLocaleDateString('en-CA');
+      const lastDate = new Date(streak.last_active_date).toISOString().split('T')[0];
       const now = new Date();
-      const today = now.toLocaleDateString('en-CA');
+      const today = now.toISOString().split('T')[0];
       
       const yesterdayDate = new Date();
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-      const yesterday = yesterdayDate.toLocaleDateString('en-CA');
+      const yesterday = yesterdayDate.toISOString().split('T')[0];
 
       if (lastDate !== today && lastDate !== yesterday) {
-        // Streak is broken — reset to 0
+        // Streak is broken — reset to 0 in response
         streak.current_streak = 0;
       }
     }
@@ -969,8 +994,16 @@ exports.getUserStats = async (req, res) => {
     const bestScore = totalAttempts
       ? Math.max(...rows.map((attempt) => attempt.score))
       : 0;
-    const totalXp = rows.reduce((sum, attempt) => sum + attempt.correct_answers * 10 + attempt.stars * 25, 0);
+    const totalXp = rows.reduce((sum, attempt) => sum + (attempt.correct_answers || 0) * 10 + (attempt.stars || 0) * 25, 0);
     const perfectScores = rows.filter((attempt) => attempt.score === 100).length;
+
+    // Achievement logic
+    const achievements = [
+      { id: 'first_quiz', unlocked: totalAttempts >= 1 },
+      { id: 'perfect_score', unlocked: perfectScores >= 1 },
+      { id: 'streak_5', unlocked: (streak?.current_streak || 0) >= 5 },
+      { id: 'xp_1000', unlocked: totalXp >= 1000 }
+    ];
 
     res.json({
       success: true,
@@ -984,6 +1017,7 @@ exports.getUserStats = async (req, res) => {
         longestStreak: streak?.longest_streak || streak?.current_streak || 0,
         lastActiveDate: streak?.last_active_date || null,
         recentAttempts: rows.slice(0, 5),
+        achievements
       },
     });
   } catch (error) {

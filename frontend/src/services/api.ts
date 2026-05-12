@@ -28,7 +28,12 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
     const token = await getFreshAccessToken();
     const headers = new Headers(options.headers);
     headers.set("Content-Type", "application/json");
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+      if (token.length > 4000) {
+        console.warn(`[API] Large Authorization header detected: ${token.length} chars`);
+      }
+    }
 
     const response = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
@@ -87,6 +92,7 @@ export const submitQuiz = (payload: {
   level: number;
   quiz: number;
   answers: { questionId: number; selectedAnswer: number | null; selectedAnswerText?: string | null }[];
+  timeTaken?: number;
 }) =>
   apiRequest("/submit-quiz", {
     method: "POST",

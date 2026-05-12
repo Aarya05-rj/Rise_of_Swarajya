@@ -40,34 +40,44 @@ export const Dashboard: React.FC = () => {
 
   useEffect(() => {
     if (user) {
+      // Check if streak should reset
+      const lastQuizDate = localStorage.getItem("lastQuizDate");
+      if (lastQuizDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const lastDate = new Date(lastQuizDate);
+        lastDate.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 1) {
+          localStorage.setItem("quizStreak", "0");
+        }
+      }
       fetchDashboardData();
     }
   }, [user]);
 
   const fetchDashboardData = async () => {
     try {
-      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined;
-      
-      // Fetch everything in parallel
+      setLoading(true);
       // Fetch everything using our API helpers which handle tokens better
       const [stats, profile] = await Promise.all([
         getUserStats(user?.id || ''),
         getProfile(user?.id || '')
       ]);
 
-      if (stats.success) {
+      if (stats.success && stats.data) {
         const s = stats.data;
         setUserData((prev: any) => ({
           ...prev,
           total_score: s.totalXp,
-          progress: Math.round((s.totalAttempts / 90) * 100),
-          rank: s.totalXp > 500 ? 'Sardar' : s.totalXp > 200 ? 'Warrior' : 'Soldier',
-          currentStreak: s.currentStreak
+          progress: Math.min(Math.round((s.totalAttempts / 90) * 100), 100),
+          rank: s.totalXp >= 1000 ? 'Sardar' : s.totalXp >= 300 ? 'Warrior' : 'Soldier',
+          currentStreak: Number(localStorage.getItem("quizStreak")) || s.currentStreak || 0
         }));
         setActivities(s.recentAttempts || []);
       }
 
-      if (profile.success) {
+      if (profile.success && profile.data) {
         setUserData((prev: any) => ({ ...prev, ...profile.data }));
       }
     } catch (err) {

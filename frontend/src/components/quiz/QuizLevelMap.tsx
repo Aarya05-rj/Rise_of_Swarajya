@@ -1,80 +1,137 @@
 import { motion } from 'framer-motion';
-import { Lock, Swords } from 'lucide-react';
+import { Lock, HelpCircle, Flame, Zap, Trophy } from 'lucide-react';
 import type { LevelMeta, QuizProgress } from './types';
 
 interface QuizLevelMapProps {
   levels: LevelMeta[];
   progress: QuizProgress[];
+  userStats?: any;
   onSelectLevel: (level: number) => void;
 }
 
-const quizzesPerLevel = 9;
+const QUIZZES_PER_LEVEL = 9;
 
-const completedForLevel = (progress: QuizProgress[], level: number) =>
-  progress.filter((item) => item.level === level && item.completed).length;
+// PERMANENT PROGRESS SYSTEM LOGIC
+const getCompletedQuizzes = () => {
+  try {
+    return JSON.parse(localStorage.getItem("completedQuizzes") || "{}");
+  } catch {
+    return {};
+  }
+};
 
-const isLevelUnlocked = (_progress: QuizProgress[], _level: number) => true;
+const isQuizPassed = (level: number, quiz: number, progress: QuizProgress[]) => {
+  const completed = getCompletedQuizzes();
+  if (completed[`level${level}_quiz${quiz}`]) return true;
+  
+  // Fallback to progress prop if localStorage is empty
+  return progress.some(p => p.level === level && p.quiz === quiz && p.completed);
+};
 
-export const QuizLevelMap = ({ levels, progress, onSelectLevel }: QuizLevelMapProps) => (
-  <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(255,153,51,0.16),transparent_30%),linear-gradient(135deg,#1A1A1A,#24140a_55%,#3D2817)] px-4 py-6 text-cream md:px-8">
-    <div className="mx-auto max-w-7xl">
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-7 text-center"
-      >
-        <p className="mb-2 text-xs font-black tracking-[0.35em] text-royal-gold">QUIZ GAME</p>
-        <h1 className="text-3xl font-black leading-tight text-cream md:text-5xl">Rise of Swarajya</h1>
-        <p className="mt-3 text-sm text-cream/60 md:text-base">Choose a chapter and begin the quiz.</p>
-      </motion.div>
+const isLevelCompleted = (level: number, progress: QuizProgress[]) => {
+  return Array.from({ length: QUIZZES_PER_LEVEL }).every((_, i) => 
+    isQuizPassed(level, i + 1, progress)
+  );
+};
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {levels.map((level, index) => {
-          const unlocked = isLevelUnlocked(progress, level.level);
-          const completed = completedForLevel(progress, level.level);
-          return (
-            <motion.button
-              key={level.level}
-              type="button"
-              disabled={!unlocked}
-              onClick={() => onSelectLevel(level.level)}
-              initial={{ opacity: 0, y: 24, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: index * 0.045 }}
-              whileHover={unlocked ? { y: -8, scale: 1.02 } : undefined}
-              className={`group min-h-52 rounded-3xl border p-5 text-center transition-all duration-300 ${
-                unlocked
-                  ? 'border-saffron bg-[#2b180d]/80 shadow-[0_0_34px_rgba(255,153,51,0.18)]'
-                  : 'border-white/10 bg-black/20 opacity-60'
-              }`}
-            >
-              <div
-                className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border ${
-                  unlocked ? 'border-saffron/40 bg-saffron/15 text-saffron' : 'border-white/10 bg-white/5 text-white/35'
+const isLevelUnlocked = (level: number, progress: QuizProgress[]) => {
+  if (level === 1) return true;
+  // Next level unlocks ONLY after all 9 quizzes of current level are passed
+  return isLevelCompleted(level - 1, progress);
+};
+
+export const QuizLevelMap = ({ levels, progress, userStats, onSelectLevel }: QuizLevelMapProps) => {
+  // Aggregate stats
+  const totalXp = userStats?.totalXp ?? progress.reduce((sum, p) => sum + (p.score * 10) + (p.stars * 25), 0);
+  const totalCleared = Object.keys(getCompletedQuizzes()).length || userStats?.totalAttempts || progress.filter(p => p.completed).length;
+  const currentStreak = Number(localStorage.getItem("quizStreak")) || userStats?.currentStreak || 0;
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0a] px-6 py-10 text-white md:px-12">
+      <div className="mx-auto max-w-7xl">
+        {/* Header Section */}
+        <div className="mb-16 flex flex-col items-start justify-between gap-8 md:flex-row md:items-end">
+          <div className="flex-1">
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.4em] text-saffron">Quiz Journey</p>
+            <h1 className="text-5xl font-black tracking-tight text-white md:text-7xl">Swarajya Lessons</h1>
+            <p className="mt-4 text-sm font-medium text-gray-500">Complete all 9 quizzes in a level to unlock the next level.</p>
+          </div>
+
+          {/* Stats Cards */}
+          <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-5 py-4 min-w-[100px]">
+              <Flame className="h-5 w-5 text-saffron mb-2" />
+              <span className="text-xl font-black">{currentStreak}</span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Streak</p>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-5 py-4 min-w-[100px]">
+              <Zap className="h-5 w-5 text-saffron mb-2" />
+              <span className="text-xl font-black">{totalXp}</span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">XP</p>
+            </div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-[#111] px-5 py-4 min-w-[100px]">
+              <Trophy className="h-5 w-5 text-saffron mb-2" />
+              <span className="text-xl font-black">{totalCleared}</span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-600">Cleared</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Level Grid */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {levels.map((level, index) => {
+            const unlocked = isLevelUnlocked(level.level, progress);
+            const completedCount = Array.from({ length: QUIZZES_PER_LEVEL }).filter((_, i) => 
+              isQuizPassed(level.level, i + 1, progress)
+            ).length;
+            
+            return (
+              <motion.button
+                key={level.level}
+                type="button"
+                disabled={!unlocked}
+                onClick={() => onSelectLevel(level.level)}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={unlocked ? { scale: 1.01 } : {}}
+                className={`group relative flex items-start gap-6 rounded-[2.5rem] border p-8 text-left transition-all ${
+                  unlocked 
+                    ? 'border-white/5 bg-[#111] hover:border-saffron/30' 
+                    : 'border-white/5 bg-[#0a0a0a] opacity-50'
                 }`}
               >
-                {unlocked ? <Swords className="h-7 w-7" /> : <Lock className="h-7 w-7" />}
-              </div>
-              <p className="mb-2 text-xs font-black uppercase tracking-[0.28em] text-royal-gold">Level {level.level}</p>
-              <h2 className={`mb-3 text-base font-black leading-snug ${unlocked ? 'text-cream' : 'text-white/35'}`}>{level.title}</h2>
-              <p className="mb-4 min-h-8 text-xs font-semibold text-cream/45">{level.subtitle}</p>
-              <div className="mx-auto mb-3 flex max-w-28 flex-wrap justify-center gap-1.5">
-                {Array.from({ length: quizzesPerLevel }).map((_, quizIndex) => (
-                  <span
-                    key={quizIndex}
-                    className={`h-3 w-3 rounded-full border ${
-                      quizIndex < completed
-                        ? 'border-royal-gold bg-royal-gold shadow-[0_0_10px_rgba(212,175,55,0.55)]'
-                        : 'border-white/15 bg-white/10'
-                    }`}
-                  />
-                ))}
-              </div>
-              <p className="text-xs font-bold text-cream/45">{completed}/{quizzesPerLevel} complete</p>
-            </motion.button>
-          );
-        })}
+                {/* Progress Badge */}
+                <div className="absolute right-8 top-8 text-xs font-black text-gray-600">
+                  {completedCount}/{QUIZZES_PER_LEVEL}
+                </div>
+
+                {/* Icon Container */}
+                <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${
+                  unlocked ? 'bg-white/5 text-saffron' : 'bg-white/5 text-gray-700'
+                }`}>
+                  {unlocked ? <HelpCircle className="h-8 w-8" /> : <Lock className="h-8 w-8" />}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-saffron">Level {level.level}</p>
+                  <h2 className="mb-2 text-3xl font-black text-white">{level.title}</h2>
+                  <p className="mb-6 text-sm font-bold text-gray-600">{level.subtitle}</p>
+                  
+                  <div className="text-xs font-black uppercase tracking-widest">
+                    {unlocked ? (
+                      <span className="text-white/60">Open quiz path</span>
+                    ) : (
+                      <span className="text-gray-700">Locked until previous level is complete</span>
+                    )}
+                  </div>
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};

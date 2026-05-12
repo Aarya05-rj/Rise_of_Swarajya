@@ -133,14 +133,12 @@ export const Profile: React.FC = () => {
 
   const fetchProfile = async () => {
     try {
-      const [profileResponse, statsResponse] = await Promise.all([
-        fetch(`/api/profile/${user?.id}`),
+      setLoading(true);
+      const [profileResult, statsResponse] = await Promise.all([
+        fetch(`/api/profile/${user?.id}`).then(res => res.json()),
         getUserStats(user?.id || ''),
       ]);
 
-      if (!profileResponse.ok) throw new Error('Failed to fetch profile');
-
-      const profileResult = await profileResponse.json();
       const data = profileResult.data || profileResult;
       
       if (statsResponse.success && statsResponse.data) {
@@ -149,13 +147,13 @@ export const Profile: React.FC = () => {
 
       const freshStats = normalizeStats(statsResponse.data);
       
-      // Smart mapping for flexible column names
+      // Smart mapping for flexible column names, prioritizing backend data
       const mappedData = {
         ...data,
-        total_score: freshStats.totalXp || data.total_score || data.score || data.points || data.xp || 0,
+        total_score: freshStats.totalXp ?? data.total_score ?? data.score ?? 0,
         progress: Math.min(((freshStats.totalAttempts || 0) / 90) * 100, 100),
-        rank: getRank(freshStats.totalXp || 0) || data.rank || data.status || 'Soldier',
-        streak: freshStats.currentStreak || data.streak || data.learning_streak || 0
+        rank: data.rank || getRank(freshStats.totalXp || 0) || 'Soldier',
+        streak: Number(localStorage.getItem("quizStreak")) || freshStats.currentStreak || data.streak || 0
       };
       
       setProfileData(mappedData);
@@ -207,29 +205,58 @@ export const Profile: React.FC = () => {
 
     setUploadingAvatar(true);
     try {
-      const avatarUrl = await createAvatarDataUrl(file);
+      // 1. Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
 
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // 3. Update Auth Metadata
       const { error: authErr } = await supabase.auth.updateUser({
-        data: { avatar_url: avatarUrl },
+        data: { avatar_url: publicUrl },
       });
       if (authErr) throw authErr;
 
-      await fetch(`/api/profile/${user.id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          full_name: profileData?.full_name || user.user_metadata?.full_name || name,
-          avatar_url: avatarUrl,
-        }),
-      });
+      // 4. Update Database Table (Try both 'profiles' and 'users')
+      const updatePayload = {
+        full_name: profileData?.full_name || user.user_metadata?.full_name || name,
+        avatar_url: publicUrl,
+        updated_at: new Date().toISOString()
+      };
 
-      setProfileData((current: any) => ({ ...current, avatar_url: avatarUrl }));
+      try {
+        await fetch(`/api/profile/${user.id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload),
+        });
+      } catch (err) {
+        console.warn('API update failed, trying direct Supabase update');
+        await supabase.from('users').update({ avatar_url: publicUrl }).eq('id', user.id);
+      }
+
+      setProfileData((current: any) => ({ ...current, avatar_url: publicUrl }));
+      alert('Profile photo updated successfully!');
     } catch (err) {
+      console.error('Avatar upload error:', err);
       const message = err instanceof Error ? err.message : 'Could not update profile photo.';
-      alert(message);
+      alert(`Error: ${message}`);
     } finally {
       setUploadingAvatar(false);
-      event.target.value = '';
+      if (event.target) event.target.value = '';
     }
   };
 

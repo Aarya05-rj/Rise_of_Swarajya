@@ -24,6 +24,7 @@ router.post('/submit-quiz', quizController.submitQuiz);
 router.get('/quiz-history/:userId/:quizId', quizController.getQuizHistory);
 router.get('/quiz-history/:userId', quizController.getQuizHistory);
 router.get('/user-stats/:userId', quizController.getUserStats);
+router.get('/profile-data/:userId', quizController.getUserStats);
 router.get('/progress/:userId', quizController.getProgress);
 router.get('/user-progress', quizController.getProgress);
 
