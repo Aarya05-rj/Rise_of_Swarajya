@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const { createClient } = require('@supabase/supabase-js');
+const { supabaseUrl, supabaseKey } = require('../config/supabaseCredentials');
 const fs = require('fs');
 const path = require('path');
 
@@ -45,7 +46,7 @@ const getRequestSupabase = (req) => {
     return supabase;
   }
 
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY, {
+  return createClient(supabaseUrl, supabaseKey, {
     global: {
       headers: { Authorization: authorization },
     },

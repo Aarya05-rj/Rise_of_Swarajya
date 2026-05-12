@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Shield, Award, Edit2, Save, X, Camera, Loader2, Flame, Star, Trophy } from 'lucide-react';
+import { Mail, Award, Edit2, Save, X, Camera, Loader2, Flame, Star, Trophy } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { getUserStats } from '../services/api';
 
@@ -51,40 +51,6 @@ const getSafeAvatarUrl = (value?: string) => {
   if (!value) return '';
   return value.includes('/storage/v1/object/avatars/') ? '' : value;
 };
-
-const createAvatarDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onerror = () => reject(new Error('Could not read the selected image.'));
-    reader.onload = () => {
-      const image = new Image();
-
-      image.onerror = () => reject(new Error('Could not load the selected image.'));
-      image.onload = () => {
-        const maxSize = 384;
-        const scale = Math.min(maxSize / image.width, maxSize / image.height, 1);
-        const width = Math.max(1, Math.round(image.width * scale));
-        const height = Math.max(1, Math.round(image.height * scale));
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-
-        if (!context) {
-          reject(new Error('Could not prepare the selected image.'));
-          return;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        context.drawImage(image, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
-      };
-
-      image.src = String(reader.result || '');
-    };
-
-    reader.readAsDataURL(file);
-  });
 
 export const Profile: React.FC = () => {
   const { user, refreshUser } = useAuth();

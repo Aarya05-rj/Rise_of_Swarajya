@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #fff7e8;
+  color: #211714;
+}
+
+.dark body {
+  background: #150f0d;
+  color: #fff7e8;
+}
+
+.royal-panel {
+  @apply border border-amber-200/80 bg-white/90 shadow-royal backdrop-blur dark:border-amber-500/20 dark:bg-[#211714]/90;
+}
+
+.input {
+  @apply w-full rounded-lg border border-amber-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-saffron focus:ring-4 focus:ring-saffron/20 dark:border-white/10 dark:bg-white/5 dark:text-white;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-saffron px-4 py-2.5 text-sm font-semibold text-royalBrown shadow-lg shadow-orange-500/20 transition hover:bg-[#ffad5c] disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg border border-amber-200 bg-white px-4 py-2.5 text-sm font-semibold text-royalBrown transition hover:border-saffron dark:border-white/10 dark:bg-white/5 dark:text-white;
+}
+
+.ql-toolbar,
+.ql-container {
+  @apply rounded-lg border-amber-200 bg-white dark:border-white/10 dark:bg-white/5 dark:text-white;
+}
