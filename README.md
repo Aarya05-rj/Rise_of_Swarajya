@@ -4,40 +4,40 @@ A full-stack educational web application about the **Maratha Empire** and the le
 
 ---
 
-## ?? Project Structure
+##  Project Structure
 
 ```
 Antigravity/
 +-- backend/                 ? Node.js / Express API
-¦   +-- config/              ? Supabase DB configuration
-¦   +-- controllers/         ? Business logic
-¦   +-- middleware/          ? Auth validation middleware
-¦   +-- models/              ? Database schema references
-¦   +-- routes/              ? API endpoint definitions
-¦   +-- server.js            ? Main backend entry point
-¦   +-- .env                 ? Secrets (Supabase keys, PORT)
-¦   +-- package.json
-¦
+Â¦   +-- config/              ? Supabase DB configuration
+Â¦   +-- controllers/         ? Business logic
+Â¦   +-- middleware/          ? Auth validation middleware
+Â¦   +-- models/              ? Database schema references
+Â¦   +-- routes/              ? API endpoint definitions
+Â¦   +-- server.js            ? Main backend entry point
+Â¦   +-- .env                 ? Secrets (Supabase keys, PORT)
+Â¦   +-- package.json
+Â¦
 +-- frontend/                ? React + Vite (TypeScript)
-¦   +-- src/
-¦   ¦   +-- components/      ? Reusable UI components
-¦   ¦   +-- context/         ? React Context (Auth)
-¦   ¦   +-- hooks/           ? Custom React hooks
-¦   ¦   +-- pages/           ? Application screens
-¦   ¦   +-- services/        ? API service layer
-¦   ¦   +-- App.tsx
-¦   ¦   +-- main.tsx
-¦   +-- public/              ? Static assets & images
-¦   +-- index.html
-¦   +-- package.json
-¦
+Â¦   +-- src/
+Â¦   Â¦   +-- components/      ? Reusable UI components
+Â¦   Â¦   +-- context/         ? React Context (Auth)
+Â¦   Â¦   +-- hooks/           ? Custom React hooks
+Â¦   Â¦   +-- pages/           ? Application screens
+Â¦   Â¦   +-- services/        ? API service layer
+Â¦   Â¦   +-- App.tsx
+Â¦   Â¦   +-- main.tsx
+Â¦   +-- public/              ? Static assets & images
+Â¦   +-- index.html
+Â¦   +-- package.json
+Â¦
 +-- README.md
 +-- .gitignore
 ```
 
 ---
 
-## ?? Tech Stack
+##  Tech Stack
 
 | Layer     | Technology                          |
 |-----------|-------------------------------------|
@@ -50,7 +50,7 @@ Antigravity/
 
 ---
 
-## ?? Getting Started
+##   Getting Started
 
 ### Prerequisites
 - Node.js v18+
@@ -84,7 +84,7 @@ The app will run at **http://localhost:5173** (frontend) and **http://localhost:
 
 ---
 
-## ?? API Endpoints
+##   API Endpoints
 
 | Method | Endpoint                | Description                  |
 |--------|-------------------------|------------------------------|
@@ -99,18 +99,18 @@ The app will run at **http://localhost:5173** (frontend) and **http://localhost:
 
 ---
 
-## ?? Rank System
+##  Rank System
 
 | XP Range  | Rank      |
 |-----------|-----------|
-| 0 – 50    | Beginner  |
-| 51 – 100  | Warrior   |
-| 101 – 200 | Hero      |
+| 0 â€“ 50    | Beginner  |
+| 51 â€“ 100  | Warrior   |
+| 101 â€“ 200 | Hero      |
 | 200+      | King      |
 
 ---
 
-## ?? Supabase Schema
+##  Supabase Schema
 
 ### Tables Required
 - `profiles` - User data, score, rank, progress
@@ -122,6 +122,6 @@ The app will run at **http://localhost:5173** (frontend) and **http://localhost:
 
 ---
 
-## ????? Authors
+##  Authors
 
 Built with honor and respect for **Maratha History** ??
