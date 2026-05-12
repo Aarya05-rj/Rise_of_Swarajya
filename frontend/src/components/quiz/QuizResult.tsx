@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, RefreshCw, Trophy, Sparkles, Star } from 'lucide-react';
+import { ArrowLeft, Trophy, Sparkles, Star } from 'lucide-react';
 
 interface QuizResultProps {
   score: number;

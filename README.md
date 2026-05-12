@@ -125,3 +125,16 @@ The app will run at **http://localhost:5173** (frontend) and **http://localhost:
 ##  Authors
 
 Built with honor and respect for **Maratha History** ??
+
+---
+
+## Admin Panel
+
+A complete Supabase-powered admin panel has been added in:
+
+```txt
+client/   React + Vite admin frontend
+server/   Express REST API for admin auth, stories, events and gallery
+```
+
+See `README_ADMIN.md` for the SQL schema, environment variables, local setup, API routes and deployment instructions.

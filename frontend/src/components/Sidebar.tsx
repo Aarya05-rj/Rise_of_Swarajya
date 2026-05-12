@@ -9,7 +9,6 @@ import {
   Music, 
   User, 
   LogOut, 
-  Shield,
   Menu,
   X
 } from 'lucide-react';

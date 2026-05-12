@@ -7,33 +7,14 @@ import {
   Map as MapIcon, 
   Users, 
   HelpCircle,
-  Shield,
   Activity,
   Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getQuizProgress, getUserStats, getProfile } from '../services/api';
-
-const normalizeActivities = (payload: any): any[] => {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.activities)) return payload.activities;
-  return [];
-};
-
-const readJson = async (response: Response) => {
-  const text = await response.text();
-  if (!text) return {};
-
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {};
-  }
-};
+import { getUserStats, getProfile } from '../services/api';
 
 export const Dashboard: React.FC = () => {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
   const [userData, setUserData] = useState<any>(null);
   const [activities, setActivities] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
